@@ -4,6 +4,8 @@
 #define LED 5
 
 
+volatile uint32_t t = 0;
+
 void app_main() {
     // Configure pin
     gpio_config_t io_conf;
@@ -14,11 +16,15 @@ void app_main() {
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
     // Main loop
+
+
     while(true) {
         gpio_set_level(LED, 0);
-        vTaskDelay(100 / portTICK_RATE_MS);
+        vTaskDelay(t / portTICK_RATE_MS);
         gpio_set_level(LED, 1);
-        vTaskDelay(100 / portTICK_RATE_MS);
+        vTaskDelay(t / portTICK_RATE_MS);
+
+        t++;
     }
 
 }

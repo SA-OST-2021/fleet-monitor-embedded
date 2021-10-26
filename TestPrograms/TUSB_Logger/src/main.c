@@ -26,8 +26,7 @@ static const char *TAG = "example";
 
 void app_main(void)
 {
-    /* Setting TinyUSB up */
-    ESP_LOGI(TAG, "USB initialization");
+    ESP_LOGI(TAG, "\n\n\n\n*******************************\nHALLO!\n*******************************\n\n\n\n");
 
     tinyusb_config_t tusb_cfg = { 0 }; // the configuration uses default values
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
@@ -35,22 +34,15 @@ void app_main(void)
     tinyusb_config_cdcacm_t amc_cfg = { 0 }; // the configuration uses default values
     ESP_ERROR_CHECK(tusb_cdc_acm_init(&amc_cfg));
 
+    esp_tusb_init_console(TINYUSB_CDC_ACM_0); // log to usb
+
     ESP_LOGI(TAG, "USB initialization DONE");
     while (1) {
-        ESP_LOGI(TAG, "log -> UART");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        fprintf(stdout, "example: print -> stdout\n");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        fprintf(stderr, "example: print -> stderr\n");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-        esp_tusb_init_console(TINYUSB_CDC_ACM_0); // log to usb
         ESP_LOGI(TAG, "log -> USB");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         fprintf(stdout, "example: print -> stdout\n");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         fprintf(stderr, "example: print -> stderr\n");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
-        esp_tusb_deinit_console(TINYUSB_CDC_ACM_0); // log to uart
     }
 }

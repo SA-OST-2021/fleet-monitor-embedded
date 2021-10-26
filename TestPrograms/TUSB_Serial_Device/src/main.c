@@ -9,6 +9,8 @@
 // This example contains minimal code to make ESP32-S2 based device
 // recognizable by USB-host devices as a USB Serial Device.
 
+#define CONFIG_USB_CDC_ENABLED
+
 #include <stdint.h>
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -16,6 +18,8 @@
 #include "tinyusb.h"
 #include "tusb_cdc_acm.h"
 #include "sdkconfig.h"
+
+#define CONFIG_TINYUSB_CDC_RX_BUFSIZE 512
 
 static const char *TAG = "example";
 static uint8_t buf[CONFIG_TINYUSB_CDC_RX_BUFSIZE + 1];

@@ -9,8 +9,6 @@
 // This example contains minimal code to make ESP32-S2 based device
 // recognizable by USB-host devices as a USB Serial Device.
 
-#define CONFIG_USB_CDC_ENABLED
-
 #include <stdint.h>
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"

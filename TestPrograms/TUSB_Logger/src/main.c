@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/reent.h>
+#include <driver/gpio.h>
 #include "esp_log.h"
 #include "esp_vfs.h"
 #include "freertos/FreeRTOS.h"
@@ -22,27 +23,54 @@
 #include "tusb_console.h"
 #include "sdkconfig.h"
 
+
+#define LED 5
+
+
 static const char *TAG = "example";
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "\n\n\n\n*******************************\nHALLO!\n*******************************\n\n\n\n");
-
-    tinyusb_config_t tusb_cfg = { 0 }; // the configuration uses default values
+    // Init USB
+    tinyusb_config_t tusb_cfg = {0};                        // the configuration uses default values
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
-
-    tinyusb_config_cdcacm_t amc_cfg = { 0 }; // the configuration uses default values
+    tinyusb_config_cdcacm_t amc_cfg = {0};                  // the configuration uses default values
     ESP_ERROR_CHECK(tusb_cdc_acm_init(&amc_cfg));
+    esp_tusb_init_console(TINYUSB_CDC_ACM_0);               // log to usb
 
-    esp_tusb_init_console(TINYUSB_CDC_ACM_0); // log to usb
+    // Init GPIO
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = (1ULL << LED);
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+    gpio_set_drive_capability(LED, GPIO_DRIVE_CAP_MAX);
+    gpio_set_level(LED, 0);
+
+    // Blink LED on startup
+    for (int i = 0; i < 6; i++)
+    {
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+        gpio_set_level(LED, i % 2);
+    }
+    
 
     ESP_LOGI(TAG, "USB initialization DONE");
     while (1) {
+        /*
         ESP_LOGI(TAG, "log -> USB");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         fprintf(stdout, "example: print -> stdout\n");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         fprintf(stderr, "example: print -> stderr\n");
         vTaskDelay(1000 / portTICK_PERIOD_MS);
+        */
+
+        gpio_set_level(LED, tud_cdc_connected());
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+
+        fprintf(stdout, "example: print -> stdout\n");
     }
 }

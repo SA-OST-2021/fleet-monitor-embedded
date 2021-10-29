@@ -1,16 +1,7 @@
-/* USB Example
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
-// DESCRIPTION:
-// This example contains minimal code to make ESP32-S2 based device
-// recognizable by USB-host devices as a USB Serial Device printing output from
-// the application.
-
-//#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+// ***************************************************************
+//                        Attention!
+//
+// UART1 Debug enabled on GPIO17 / GPIO18
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,63 +35,23 @@
 
 static const char *MAIN_TAG = "main";
 
+enum {BLINK_NOT_MOUNTED = 250, BLINK_MOUNTED = 1000, BLINK_SUSPENDED = 2500};
+
 void tinyusb_cdc_rx_callback(int itf, cdcacm_event_t *event);
 bool tusb_cdc_data_available(void);
 const char* tusb_cdc_read_string(void);
-static char rxBuffer[RX_BUFFER_SIZE];
-volatile static bool dataReceived = false;
-
-// ***************************************************************
-//                        Attention!
-//
-// UART1 Debug enabled on GPIO17 / GPIO18
-
-
-
-
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
-enum  {
-  BLINK_NOT_MOUNTED = 250,
-  BLINK_MOUNTED = 1000,
-  BLINK_SUSPENDED = 2500,
-};
-
-// static timer
-StaticTimer_t blinky_tmdef;
-TimerHandle_t blinky_tm;
-
-// static task for usbd
-// Increase stack size when debug log is enabled
-
-
-//#if CFG_TUSB_DEBUG
-  #define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE)
-//#else
-  //#define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE/2)
-//#endif
-
-StackType_t  usb_device_stack[USBD_STACK_SIZE];
-StaticTask_t usb_device_taskdef;
-
-// static task for cdc
-#define CDC_STACK_SZIE      configMINIMAL_STACK_SIZE
-StackType_t  cdc_stack[CDC_STACK_SZIE];
-StaticTask_t cdc_taskdef;
-
 
 void led_blinky_cb(TimerHandle_t xTimer);
 void usb_device_task(void* param);
-void cdc_task(void* params);
-
-
-
 static void configure_pins(usb_hal_context_t *usb);
 
+StaticTimer_t blinky_tmdef;
+TimerHandle_t blinky_tm;
+StackType_t  usb_device_stack[(3*configMINIMAL_STACK_SIZE)];
+StaticTask_t usb_device_taskdef;
 
+static char rxBuffer[RX_BUFFER_SIZE];
+volatile static bool dataReceived = false;
 
 void app_main(void)
 {
@@ -120,7 +71,7 @@ void app_main(void)
     
   
     // Create a task for tinyusb device stack
-    xTaskCreateStatic(usb_device_task, "usbd", USBD_STACK_SIZE, NULL, configMAX_PRIORITIES-1, usb_device_stack, &usb_device_taskdef);
+    xTaskCreateStatic(usb_device_task, "usbd", (3*configMINIMAL_STACK_SIZE), NULL, configMAX_PRIORITIES-1, usb_device_stack, &usb_device_taskdef);
     blinky_tm = xTimerCreateStatic(NULL, pdMS_TO_TICKS(BLINK_NOT_MOUNTED), true, NULL, led_blinky_cb, &blinky_tmdef);
     xTimerStart(blinky_tm, 0);    
 

@@ -29,6 +29,13 @@
 #include "tusb_console.h"
 #include "sdkconfig.h"
 
+#include "esp_rom_gpio.h"
+#include "hal/gpio_ll.h"
+#include "hal/usb_hal.h"
+#include "soc/usb_periph.h"
+#include "driver/periph_ctrl.h"
+#include "driver/rmt.h"
+
 #define LED                 5
 #define RX_BUFFER_SIZE      128
 
@@ -42,6 +49,11 @@ bool tusb_cdc_data_available(void);
 const char* tusb_cdc_read_string(void);
 static char rxBuffer[RX_BUFFER_SIZE];
 volatile static bool dataReceived = false;
+
+// ***************************************************************
+//                        Attention!
+//
+// UART1 Debug enabled on GPIO17 / GPIO18
 
 
 
@@ -63,11 +75,13 @@ TimerHandle_t blinky_tm;
 
 // static task for usbd
 // Increase stack size when debug log is enabled
-#if CFG_TUSB_DEBUG
+
+
+//#if CFG_TUSB_DEBUG
   #define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE)
-#else
-  #define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE/2)
-#endif
+//#else
+  //#define USBD_STACK_SIZE     (3*configMINIMAL_STACK_SIZE/2)
+//#endif
 
 StackType_t  usb_device_stack[USBD_STACK_SIZE];
 StaticTask_t usb_device_taskdef;
@@ -84,18 +98,31 @@ void cdc_task(void* params);
 
 
 
+static void configure_pins(usb_hal_context_t *usb);
+
 
 
 void app_main(void)
 {
     // Init USB
-    tinyusb_config_t tusb_cfg = {0};                        // the configuration uses default values
-    ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
-    tinyusb_config_cdcacm_t amc_cfg = {0};                  // the configuration uses default values
+    periph_module_reset(PERIPH_USB_MODULE);
+    periph_module_enable(PERIPH_USB_MODULE);
+    usb_hal_context_t hal = {.use_external_phy = false};    // Use built-in PHY
+    usb_hal_init(&hal);
+    configure_pins(&hal);
+    tusb_init();
+
+    // Setup USB CDC and reroute logger
+    tinyusb_config_cdcacm_t amc_cfg = {0};
     ESP_ERROR_CHECK(tusb_cdc_acm_init(&amc_cfg));
     tinyusb_cdcacm_register_callback(0, CDC_EVENT_RX, &tinyusb_cdc_rx_callback);
-    esp_tusb_init_console(TINYUSB_CDC_ACM_0);               // log to usb
+    esp_tusb_init_console(TINYUSB_CDC_ACM_0);               // Log to USB
     
+  
+    // Create a task for tinyusb device stack
+    xTaskCreateStatic(usb_device_task, "usbd", USBD_STACK_SIZE, NULL, configMAX_PRIORITIES-1, usb_device_stack, &usb_device_taskdef);
+    blinky_tm = xTimerCreateStatic(NULL, pdMS_TO_TICKS(BLINK_NOT_MOUNTED), true, NULL, led_blinky_cb, &blinky_tmdef);
+    xTimerStart(blinky_tm, 0);    
 
     // Init GPIO
     gpio_config_t io_conf;
@@ -105,24 +132,16 @@ void app_main(void)
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
-    gpio_set_drive_capability(LED, GPIO_DRIVE_CAP_MAX);
     gpio_set_level(LED, 0);
 
     // Blink LED on startup
     for (int i = 0; i < 5; i++)
-
     {
         vTaskDelay(100 / portTICK_PERIOD_MS);
         gpio_set_level(LED, i % 2);
     }
 
-    // Wait for Serial Monitor
-    while(!tud_cdc_connected())
-    {
-      vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-
-    // We are connected to Serial Monitor!
+    // Test if logging works
     vTaskDelay(500 / portTICK_PERIOD_MS);
     esp_log_level_set(MAIN_TAG, ESP_LOG_DEBUG);                 // Set log to highetst level
     fprintf(stdout, "\033[2J\033[1;1H");                        // Clear screen
@@ -131,29 +150,10 @@ void app_main(void)
     ESP_LOGW(MAIN_TAG, "ESP_LOGW: This is a warning output");   // Yellow
     ESP_LOGE(MAIN_TAG, "ESP_LOGE: This is a error output");     // Red
     fprintf(stdout, "\n");
-
-
-
-
-    //board_init();
-
-    // soft timer for blinky
-    blinky_tm = xTimerCreateStatic(NULL, pdMS_TO_TICKS(BLINK_NOT_MOUNTED), true, NULL, led_blinky_cb, &blinky_tmdef);
-    xTimerStart(blinky_tm, 0);
-
-    // Create a task for tinyusb device stack
-    //(void) xTaskCreateStatic( usb_device_task, "usbd", USBD_STACK_SIZE, NULL, configMAX_PRIORITIES-1, usb_device_stack, &usb_device_taskdef);
-
-    // Create CDC task
-    //(void) xTaskCreateStatic( cdc_task, "cdc", CDC_STACK_SZIE, NULL, configMAX_PRIORITIES-2, cdc_stack, &cdc_taskdef);
-
-    //vTaskStartScheduler();
-
-
-
+    
     while (1)
     {
-        //ESP_LOGD(MAIN_TAG, "example: print -> stdout");
+        ESP_LOGD(MAIN_TAG, "Time: %d", (uint32_t) (esp_timer_get_time() / 1000));
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
@@ -211,33 +211,52 @@ const char* tusb_cdc_read_string(void)
 
 
 
-
-
-
-
-
-
-// USB Device Driver task
-// This top level thread process all usb events and invoke callbacks
-void usb_device_task(void* param)
+static void configure_pins(usb_hal_context_t *usb)
 {
-  (void) param;
+  /* usb_periph_iopins currently configures USB_OTG as USB Device.
+   * Introduce additional parameters in usb_hal_context_t when adding support
+   * for USB Host.
+   */
+  for (const usb_iopin_dsc_t *iopin = usb_periph_iopins; iopin->pin != -1; ++iopin) {
+    if ((usb->use_external_phy) || (iopin->ext_phy_only == 0)) {
+      esp_rom_gpio_pad_select_gpio(iopin->pin);
+      if (iopin->is_output) {
+        esp_rom_gpio_connect_out_signal(iopin->pin, iopin->func, false, false);
+      } else {
+        esp_rom_gpio_connect_in_signal(iopin->pin, iopin->func, false);
+        if ((iopin->pin != GPIO_FUNC_IN_LOW) && (iopin->pin != GPIO_FUNC_IN_HIGH)) {
+          gpio_ll_input_enable(&GPIO, iopin->pin);
+        }
+      }
+      esp_rom_gpio_pad_unhold(iopin->pin);
+    }
+  }
+  if (!usb->use_external_phy) {
+    gpio_set_drive_capability(USBPHY_DM_NUM, GPIO_DRIVE_CAP_3);
+    gpio_set_drive_capability(USBPHY_DP_NUM, GPIO_DRIVE_CAP_3);
+  }
+}
 
-  // This should be called after scheduler/kernel is started.
-  // Otherwise it could cause kernel issue since USB IRQ handler does use RTOS queue API.
-  tusb_init();
 
-  // RTOS forever loop
+void led_blinky_cb(TimerHandle_t xTimer)
+{
+  (void) xTimer;
+  static bool led_state = false;
+
+  gpio_set_level(LED, led_state);
+  led_state = 1 - led_state; // toggle
+}
+
+
+
+void usb_device_task(void* param)   
+{
   while (1)
   {
-    // tinyusb device task
     tud_task();
   }
 }
 
-//--------------------------------------------------------------------+
-// Device callbacks
-//--------------------------------------------------------------------+
 
 // Invoked when device is mounted
 void tud_mount_cb(void)
@@ -264,18 +283,4 @@ void tud_suspend_cb(bool remote_wakeup_en)
 void tud_resume_cb(void)
 {
   xTimerChangePeriod(blinky_tm, pdMS_TO_TICKS(BLINK_MOUNTED), 0);
-}
-
-
-
-//--------------------------------------------------------------------+
-// BLINKING TASK
-//--------------------------------------------------------------------+
-void led_blinky_cb(TimerHandle_t xTimer)
-{
-  (void) xTimer;
-  static bool led_state = false;
-
-  gpio_set_level(LED, led_state);
-  led_state = 1 - led_state; // toggle
 }

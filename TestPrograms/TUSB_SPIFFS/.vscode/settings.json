@@ -1,0 +1,29 @@
+{
+    "files.associations": {
+        "freertos.h": "c",
+        "sdkconfig.h": "c",
+        "tusb_cdc_acm.h": "c",
+        "tinyusb.h": "c",
+        "tusb.h": "c",
+        "tusb_console.h": "c",
+        "esp_efuse_table.h": "c",
+        "*.ipp": "c",
+        "*.tcc": "c",
+        "chrono": "c",
+        "codecvt": "c",
+        "string_view": "c",
+        "algorithm": "c",
+        "random": "c",
+        "istream": "c",
+        "limits": "c",
+        "cstdio": "c",
+        "reent.h": "c",
+        "esp_rom_gpio.h": "c",
+        "queue.h": "c",
+        "gpio_ll.h": "c",
+        "usb_hal.h": "c",
+        "periph_ctrl.h": "c",
+        "usb_periph.h": "c",
+        "rmt.h": "c"
+    }
+}

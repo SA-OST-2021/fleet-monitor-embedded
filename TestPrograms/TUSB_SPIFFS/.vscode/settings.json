@@ -24,6 +24,9 @@
         "usb_hal.h": "c",
         "periph_ctrl.h": "c",
         "usb_periph.h": "c",
-        "rmt.h": "c"
+        "rmt.h": "c",
+        "diskio.h": "c",
+        "esp_err.h": "c",
+        "esp_vfs.h": "c"
     }
 }

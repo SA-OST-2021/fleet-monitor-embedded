@@ -42,10 +42,12 @@ enum
   DISK_BLOCK_SIZE = 512
 };
 
+volatile bool diskReady = true;
+
 #ifdef CFG_EXAMPLE_MSC_READONLY
 const
 #endif
-uint8_t msc_disk[DISK_BLOCK_NUM][DISK_BLOCK_SIZE] =
+volatile uint8_t msc_disk[DISK_BLOCK_NUM * DISK_BLOCK_SIZE]; /* =
 {
   //------------- Block0: Boot Sector -------------//
   // byte_per_sector    = DISK_BLOCK_SIZE; fat12_sector_num_16  = DISK_BLOCK_NUM;
@@ -114,6 +116,7 @@ uint8_t msc_disk[DISK_BLOCK_NUM][DISK_BLOCK_SIZE] =
   //------------- Block3: Readme Content -------------//
   README_CONTENTS
 };
+*/
 
 // Invoked when received SCSI_CMD_INQUIRY
 // Application fill vendor id, product id and revision with string up to 8, 16, 4 characters respectively
@@ -136,7 +139,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun)
 {
   (void) lun;
 
-  return true; // RAM disk is always ready
+  return diskReady; // RAM disk is always ready
 }
 
 // Invoked when received SCSI_CMD_READ_CAPACITY_10 and SCSI_CMD_READ_FORMAT_CAPACITY to determine the disk size

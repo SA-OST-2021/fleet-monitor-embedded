@@ -24,7 +24,10 @@
 #include "sdkconfig.h"
 #include "esp_err.h"
 #include "esp_log.h"
-#include "esp_spiffs.h"
+#include "esp_vfs.h"
+#include "esp_vfs_fat.h"
+#include "esp_system.h"
+#include "diskio_impl.h"
 
 #include "esp_rom_gpio.h"
 #include "hal/gpio_ll.h"
@@ -59,6 +62,31 @@ StaticTask_t usb_device_taskdef;
 static char rxBuffer[RX_BUFFER_SIZE];
 volatile static bool dataReceived = false;
 
+
+
+static volatile DSTATUS Stat = STA_NOINIT;
+
+/* Private function prototypes -----------------------------------------------*/
+static DSTATUS SD_CheckStatus(BYTE lun);
+DSTATUS SD_initialize (BYTE);
+DSTATUS SD_status (BYTE);
+DRESULT SD_read (BYTE, BYTE*, DWORD, UINT);
+DRESULT SD_write (BYTE, const BYTE*, DWORD, UINT);
+DRESULT SD_ioctl (BYTE, BYTE, void*);
+
+const ff_diskio_impl_t  driver =
+{
+  .init = SD_initialize,
+  .status = SD_status,
+  .read = SD_read,
+  .write = SD_write,
+  .ioctl = SD_ioctl
+};
+
+extern uint8_t msc_disk[];
+extern volatile bool diskReady;
+
+
 void app_main(void)
 {
     // Init USB
@@ -92,11 +120,13 @@ void app_main(void)
     gpio_set_level(LED, 0);
 
     // Blink LED on startup
+    /*
     for (int i = 0; i < 5; i++)
     {
         vTaskDelay(100 / portTICK_PERIOD_MS);
         gpio_set_level(LED, i % 2);
     }
+    */
 
     // Test if logging works
     vTaskDelay(500 / portTICK_PERIOD_MS);
@@ -109,6 +139,150 @@ void app_main(void)
     fprintf(stdout, "\n");
 
 
+
+    static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+    const char *base_path = "/ram";
+    const char *drv = "";
+    const size_t workbuf_size = 4096;
+    void *workbuf = NULL;
+    esp_err_t result = ESP_OK;
+    
+    
+    ESP_LOGI(MAIN_TAG, "Mounting FAT filesystem");
+    const esp_vfs_fat_mount_config_t mount_config = {
+            .max_files = 4,
+            .format_if_mount_failed = true,
+            .allocation_unit_size = CONFIG_WL_SECTOR_SIZE
+    };
+    
+    //vTaskDelay(2000 / portTICK_PERIOD_MS);
+    FATFS *fs;
+    esp_err_t err = esp_vfs_fat_register(base_path, drv, 4, &fs);
+    if (err != ESP_OK) {
+        ESP_LOGE(MAIN_TAG, "Failed to mount FATFS (%s)", esp_err_to_name(err));
+    }
+    ESP_LOGI(MAIN_TAG, "Registered!");
+
+    ff_diskio_register(0, &driver);
+
+    FRESULT fresult = f_mount(fs, drv, 1);
+    if (fresult != FR_OK) {
+        ESP_LOGW(MAIN_TAG, "f_mount failed (%d)", fresult);
+        if (!(fresult == FR_NO_FILESYSTEM && mount_config.format_if_mount_failed)) {
+            result = ESP_FAIL;
+            //goto fail;
+        }
+        workbuf = malloc(workbuf_size);
+        ESP_LOGI(MAIN_TAG, "Formatting FATFS partition");
+        fresult = f_mkfs(drv, FM_ANY | FM_SFD, workbuf_size, workbuf, workbuf_size);
+        if (fresult != FR_OK) {
+            result = ESP_FAIL;
+            ESP_LOGE(MAIN_TAG, "f_mkfs failed (%d)", fresult);
+            //goto fail;
+        }
+        free(workbuf);
+        workbuf = NULL;
+        ESP_LOGI(MAIN_TAG, "Mounting again");
+        fresult = f_mount(fs, drv, 0);
+        if (fresult != FR_OK) {
+            result = ESP_FAIL;
+            ESP_LOGE(MAIN_TAG, "f_mount failed after formatting (%d)", fresult);
+            //goto fail;
+        }
+    }
+    ESP_LOGI(MAIN_TAG, "Done!");
+
+    diskReady = true;
+
+
+
+
+    /*
+    FATFS fs;           // Filesystem object
+    FIL fil;            // File object
+    FRESULT res;        // API result code
+    UINT bw;            // Bytes written
+    static BYTE work[4096]; // Work area (larger is better for processing time)
+
+  
+    ESP_LOGI(MAIN_TAG, "Start");
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    
+    DWORD plist[] = {100, 0, 0, 0};  // 1 primary partition with 100% of space.
+    uint8_t buf[512] = {0};          // Working buffer for f_fdisk function.
+    FRESULT r = f_fdisk(0, plist, buf);
+    if (r != FR_OK)
+    {
+      ESP_LOGE(MAIN_TAG, "Error, f_fdisk failed with error code");
+    }
+
+    ESP_LOGI(MAIN_TAG, "Partitioned flash!");
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    // Format the default drive with default parameters
+    
+    ESP_LOGI(MAIN_TAG, "Creating and formatting FAT filesystem (this takes ~60 seconds)...");
+    r = f_mkfs("", FM_ANY, 0, buf, sizeof(buf));
+    if (r != FR_OK)
+    {
+      ESP_LOGE(MAIN_TAG, "Error, f_mkfs failed with error code:");
+    }
+    ESP_LOGI(MAIN_TAG, "Formatted flash!");
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    */
+
+    /*
+
+
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    ESP_LOGI(MAIN_TAG, "f_mkfs");
+    // Give a work area to the default drive
+    f_mount(&fs, "", 0);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    ESP_LOGI(MAIN_TAG, "f_mount");
+    // Create a file as new
+    res = f_open(&fil, "hello.txt", FA_CREATE_NEW | FA_WRITE);
+    if (res)
+    {
+      ESP_LOGE(MAIN_TAG, "1");
+    }
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    ESP_LOGI(MAIN_TAG, "f_open");
+    // Write a message
+    f_write(&fil, "Hello, World!\r\n", 15, &bw);
+    if (bw != 15)
+    {
+      ESP_LOGE(MAIN_TAG, "2");
+    }
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    ESP_LOGI(MAIN_TAG, "f_write");
+    // Close the file
+    f_close(&fil);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    ESP_LOGI(MAIN_TAG, "f_close");
+    // Unregister work area
+    f_mount(0, "", 0);
+    ESP_LOGI(MAIN_TAG, "f_mount");
+
+    */
+
+
+    
+    
+
+
+
+    
+    
+
+
+
+
+
+
+
+    /*
 
     ESP_LOGI(MAIN_TAG, "Initializing SPIFFS");
 
@@ -189,7 +363,7 @@ void app_main(void)
     esp_vfs_spiffs_unregister(conf.partition_label);
     ESP_LOGI(MAIN_TAG, "SPIFFS unmounted");
 
-
+    */
 
     
     while (1)
@@ -324,4 +498,74 @@ void tud_suspend_cb(bool remote_wakeup_en)
 void tud_resume_cb(void)
 {
   xTimerChangePeriod(blinky_tm, pdMS_TO_TICKS(BLINK_MOUNTED), 0);
+}
+
+
+
+
+
+
+/**
+  * @brief  Initializes a Drive
+  * @param  lun : not used
+  * @retval DSTATUS: Operation status
+  */
+DSTATUS SD_initialize(BYTE lun)
+{
+  ESP_LOGI(MAIN_TAG, "SD_initialize");
+  return STA_NOINIT & ~STA_NOINIT;
+}
+
+/**
+  * @brief  Gets Disk Status
+  * @param  lun : not used
+  * @retval DSTATUS: Operation status
+  */
+DSTATUS SD_status(BYTE lun)
+{
+  ESP_LOGI(MAIN_TAG, "SD_status");
+  return STA_NOINIT & ~STA_NOINIT;
+}
+
+/**
+  * @brief  Reads Sector(s)
+  * @param  lun : not used
+  * @param  *buff: Data buffer to store read data
+  * @param  sector: Sector address (LBA)
+  * @param  count: Number of sectors to read (1..128)
+  * @retval DRESULT: Operation result
+  */
+DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
+{
+  ESP_LOGI(MAIN_TAG, "SD_read");
+  memcpy(buff, msc_disk[sector * 512], 512 * count);
+  return RES_OK;
+}
+
+/**
+  * @brief  Writes Sector(s)
+  * @param  lun : not used
+  * @param  *buff: Data to be written
+  * @param  sector: Sector address (LBA)
+  * @param  count: Number of sectors to write (1..128)
+  * @retval DRESULT: Operation result
+  */
+DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
+{
+  ESP_LOGI(MAIN_TAG, "SD_write");
+  memcpy(msc_disk[sector * 512], buff, 512 * count);
+  return RES_OK;
+}
+
+/**
+  * @brief  I/O control operation
+  * @param  lun : not used
+  * @param  cmd: Control code
+  * @param  *buff: Buffer to send/receive control data
+  * @retval DRESULT: Operation result
+  */
+DRESULT SD_ioctl(BYTE lun, BYTE cmd, void *buff)
+{
+  ESP_LOGI(MAIN_TAG, "SD_ioctl");
+  return RES_OK;
 }

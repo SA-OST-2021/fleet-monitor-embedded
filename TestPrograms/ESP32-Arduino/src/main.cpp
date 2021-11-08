@@ -1,14 +1,15 @@
 #include <Arduino.h>
 
 
+#define LED 5
 
 void setup() {
-  pinMode(2,OUTPUT);// put your setup code here, to run once:
+  pinMode(LED, OUTPUT);// put your setup code here, to run once:
 }
 
 void loop() {
-  digitalWrite(2,HIGH);
+  digitalWrite(LED, HIGH);
   delay(200);
-  digitalWrite(2,LOW);
+  digitalWrite(LED, LOW);
   delay(200);
 }

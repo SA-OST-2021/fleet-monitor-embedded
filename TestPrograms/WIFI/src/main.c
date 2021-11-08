@@ -22,6 +22,10 @@
 #include "tusb_console.h"
 #include "sdkconfig.h"
 
+#include <driver/gpio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include "task_networking.h"
 
 #include "lwip/err.h"
@@ -42,6 +46,19 @@ void app_main(void){
 
     ESP_LOGI(TAG, "USB initialization DONE");
 
+
+    const int LED = 1;
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = (1ULL << LED);
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+    // Main loop
+
+      
+
     ESP_LOGI(TAG, "Starting Network Task");
     xTaskCreate(task_networking,
                 "task_networking",
@@ -51,7 +68,10 @@ void app_main(void){
                 NULL);
     
     while (1) {
-    
+        gpio_set_level(LED, 0);
+        vTaskDelay(200);
+        gpio_set_level(LED, 1);
+        vTaskDelay(200);
     }
 }
 

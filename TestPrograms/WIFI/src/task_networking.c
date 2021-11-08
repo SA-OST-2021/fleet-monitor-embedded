@@ -52,12 +52,12 @@ void task_networking(void *pvParameter)
     vTaskDelay(1000);
 
     //Initialize NVS
-    /*esp_err_t ret = nvs_flash_init();
+    esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
       ESP_ERROR_CHECK(nvs_flash_erase());
       ret = nvs_flash_init();
     }
-    ESP_ERROR_CHECK(ret);*/
+    ESP_ERROR_CHECK(ret);
 
     ESP_LOGI(TAG, "Network Task started");
     const TickType_t task_freq = TASK_NETWORKING_FREQ;
@@ -231,6 +231,14 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t
     ESP_LOGI(TAG, "~~~~~~~~~~~");
 }
 
+// Init specific SPI Ethernet module configuration from Kconfig (CS GPIO, Interrupt GPIO, etc.)
+spi_eth_module_config_t spi_eth_module_config = {
+    .spi_cs_gpio = 34,  //34 for hardware / 15 for dev
+    .int_gpio = 21,     //21 for hardware / 7 for dev
+    .phy_reset_gpio = -1,
+    .phy_addr = 1,
+};
+
 void init_eth() {
     // Initialize TCP/IP network interface (should be called only once in application)
     ESP_ERROR_CHECK(esp_netif_init());
@@ -244,16 +252,6 @@ void init_eth() {
         .stack = ESP_NETIF_NETSTACK_DEFAULT_ETH
     };
     esp_netif_t *eth_netif_spi = { NULL };
-    char if_key_str[10];
-    char if_desc_str[10];
-    char num_str[3];
-
-    itoa(0, num_str, 10);
-    strcat(strcpy(if_key_str, "ETH_SPI_"), num_str);
-    strcat(strcpy(if_desc_str, "eth"), num_str);
-    esp_netif_config.if_key = if_key_str;
-    esp_netif_config.if_desc = if_desc_str;
-    esp_netif_config.route_prio = 30;
     eth_netif_spi = esp_netif_new(&cfg_spi);
 
 
@@ -276,14 +274,6 @@ void init_eth() {
 
     ESP_ERROR_CHECK(spi_bus_initialize(CONFIG_EXAMPLE_ETH_SPI_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
-    // Init specific SPI Ethernet module configuration from Kconfig (CS GPIO, Interrupt GPIO, etc.)
-    spi_eth_module_config_t spi_eth_module_config = {
-        .spi_cs_gpio = 15,
-        .int_gpio = 7,
-        .phy_reset_gpio = -1,
-        .phy_addr = 0,
-    };
-
     // Configure SPI interface and Ethernet driver for specific SPI module
     esp_eth_mac_t *mac_spi;
     esp_eth_phy_t *phy_spi;
@@ -296,7 +286,6 @@ void init_eth() {
         .clock_speed_hz = CONFIG_EXAMPLE_ETH_SPI_CLOCK_MHZ * 1000 * 1000,
         .queue_size = 20
     };
-
 
     // Set SPI module Chip Select GPIO
     devcfg.spics_io_num = spi_eth_module_config.spi_cs_gpio;
@@ -321,7 +310,7 @@ void init_eth() {
     02:00:00 is a Locally Administered OUI range so should not be used except when testing on a LAN under your control.
     */
     ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle_spi, ETH_CMD_S_MAC_ADDR, (uint8_t[]) {
-        0x02, 0x00, 0x00, 0x12, 0x34, 0x56
+        0x04, 0x52, 0x15, 0x12, 0x34, 0x56
     }));
 
     // attach Ethernet driver to TCP/IP stack

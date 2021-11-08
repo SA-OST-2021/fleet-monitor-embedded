@@ -127,10 +127,13 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
-# Example Configuration
+# USB MSC Device Demo
 #
-CONFIG_EXAMPLE_MANUAL_DESC=y
-# end of Example Configuration
+CONFIG_USE_INTERNAL_FLASH=y
+# CONFIG_USE_EXTERNAL_SDCARD is not set
+CONFIG_WIFI_HTTP_ACCESS=y
+CONFIG_DISK_BLOCK_SIZE=512
+# end of USB MSC Device Demo
 
 #
 # Compiler options

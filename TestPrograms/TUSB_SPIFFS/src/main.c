@@ -24,6 +24,10 @@
 #include "sdkconfig.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_vfs.h"
+#include "esp_vfs_fat.h"
+#include "esp_system.h"
+#include "diskio_impl.h"
 #include "esp_spiffs.h"
 
 #include "esp_rom_gpio.h"
@@ -59,8 +63,79 @@ StaticTask_t usb_device_taskdef;
 static char rxBuffer[RX_BUFFER_SIZE];
 volatile static bool dataReceived = false;
 
+
+
+static volatile DSTATUS Stat = STA_NOINIT;
+
+
+
+
+static const char *TAG = "example";
+
+
 void app_main(void)
 {
+    ESP_LOGI(TAG, "Initializing SPIFFS");
+    
+    esp_vfs_spiffs_conf_t conf = {
+      .base_path = "/spiffs",
+      .partition_label = NULL,
+      .max_files = 5,
+      .format_if_mount_failed = true
+    };
+    
+    // Use settings defined above to initialize and mount SPIFFS filesystem.
+    // Note: esp_vfs_spiffs_register is an all-in-one convenience function.
+    esp_err_t ret = esp_vfs_spiffs_register(&conf);
+
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount or format filesystem");
+        } else if (ret == ESP_ERR_NOT_FOUND) {
+            ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+        }
+        return;
+    }
+    
+    size_t total = 0, used = 0;
+    ret = esp_spiffs_info(conf.partition_label, &total, &used);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
+    } else {
+        ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+    }
+
+/*
+    // Open renamed file for reading
+    ESP_LOGI(TAG, "Reading file");
+    FILE* f = fopen("/spiffs/hello.txt", "r");
+    if (f == NULL) {
+        ESP_LOGI(TAG, "Failed to open file for reading");
+        return;
+    }
+    char line[64];
+    fgets(line, sizeof(line), f);
+    fclose(f);
+    // strip newline
+    char* pos = strchr(line, '\n');
+    if (pos) {
+        *pos = '\0';
+    }
+    ESP_LOGI(TAG, "Read from file: '%s'", line);
+
+    // All done, unmount partition and disable SPIFFS
+    esp_vfs_spiffs_unregister(conf.partition_label);
+    ESP_LOGI(TAG, "SPIFFS unmounted");
+
+
+*/
+
+
+
+
+
     // Init USB
     periph_module_reset(PERIPH_USB_MODULE);
     periph_module_enable(PERIPH_USB_MODULE);
@@ -73,7 +148,7 @@ void app_main(void)
     tinyusb_config_cdcacm_t amc_cfg = {0};
     ESP_ERROR_CHECK(tusb_cdc_acm_init(&amc_cfg));
     tinyusb_cdcacm_register_callback(0, CDC_EVENT_RX, &tinyusb_cdc_rx_callback);
-    esp_tusb_init_console(TINYUSB_CDC_ACM_0);               // Log to USB
+    //esp_tusb_init_console(TINYUSB_CDC_ACM_0);               // Log to USB
     
   
     // Create a task for tinyusb device stack
@@ -92,102 +167,18 @@ void app_main(void)
     gpio_set_level(LED, 0);
 
     // Blink LED on startup
+    /*
     for (int i = 0; i < 5; i++)
     {
         vTaskDelay(100 / portTICK_PERIOD_MS);
         gpio_set_level(LED, i % 2);
     }
+    */
 
-    // Test if logging works
-    vTaskDelay(500 / portTICK_PERIOD_MS);
-    esp_log_level_set(MAIN_TAG, ESP_LOG_DEBUG);                 // Set log to highetst level
-    fprintf(stdout, "\033[2J\033[1;1H");                        // Clear screen
-    ESP_LOGD(MAIN_TAG, "ESP_LOGD: This is a debug output");     // White
-    ESP_LOGI(MAIN_TAG, "ESP_LOGI: This is a info output");      // Green
-    ESP_LOGW(MAIN_TAG, "ESP_LOGW: This is a warning output");   // Yellow
-    ESP_LOGE(MAIN_TAG, "ESP_LOGE: This is a error output");     // Red
-    fprintf(stdout, "\n");
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
 
 
 
-    ESP_LOGI(MAIN_TAG, "Initializing SPIFFS");
-
-    esp_vfs_spiffs_conf_t conf = {
-      .base_path = "/spiffs",
-      .partition_label = NULL,
-      .max_files = 5,
-      .format_if_mount_failed = true
-    };
-
-    // Use settings defined above to initialize and mount SPIFFS filesystem.
-    // Note: esp_vfs_spiffs_register is an all-in-one convenience function.
-    esp_err_t ret = esp_vfs_spiffs_register(&conf);
-
-    if (ret != ESP_OK) {
-        if (ret == ESP_FAIL) {
-            ESP_LOGE(MAIN_TAG, "Failed to mount or format filesystem");
-        } else if (ret == ESP_ERR_NOT_FOUND) {
-            ESP_LOGE(MAIN_TAG, "Failed to find SPIFFS partition");
-        } else {
-            ESP_LOGE(MAIN_TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
-        }
-        return;
-    }
-
-    size_t total = 0, used = 0;
-    ret = esp_spiffs_info(conf.partition_label, &total, &used);
-    if (ret != ESP_OK) {
-        ESP_LOGE(MAIN_TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
-    } else {
-        ESP_LOGI(MAIN_TAG, "Partition size: total: %d, used: %d", total, used);
-    }
-
-    // Use POSIX and C standard library functions to work with files.
-    // First create a file.
-    ESP_LOGI(MAIN_TAG, "Opening file");
-    FILE* f = fopen("/spiffs/hello.txt", "w");
-    if (f == NULL) {
-        ESP_LOGE(MAIN_TAG, "Failed to open file for writing");
-        return;
-    }
-    fprintf(f, "Hello World!\n");
-    fclose(f);
-    ESP_LOGI(MAIN_TAG, "File written");
-
-    // Check if destination file exists before renaming
-    struct stat st;
-    if (stat("/spiffs/foo.txt", &st) == 0) {
-        // Delete it if it exists
-        unlink("/spiffs/foo.txt");
-    }
-
-    // Rename original file
-    ESP_LOGI(MAIN_TAG, "Renaming file");
-    if (rename("/spiffs/hello.txt", "/spiffs/foo.txt") != 0) {
-        ESP_LOGE(MAIN_TAG, "Rename failed");
-        return;
-    }
-
-    // Open renamed file for reading
-    ESP_LOGI(MAIN_TAG, "Reading file");
-    f = fopen("/spiffs/foo.txt", "r");
-    if (f == NULL) {
-        ESP_LOGE(MAIN_TAG, "Failed to open file for reading");
-        return;
-    }
-    char line[64];
-    fgets(line, sizeof(line), f);
-    fclose(f);
-    // strip newline
-    char* pos = strchr(line, '\n');
-    if (pos) {
-        *pos = '\0';
-    }
-    ESP_LOGI(MAIN_TAG, "Read from file: '%s'", line);
-
-    // All done, unmount partition and disable SPIFFS
-    esp_vfs_spiffs_unregister(conf.partition_label);
-    ESP_LOGI(MAIN_TAG, "SPIFFS unmounted");
 
 
 
@@ -299,29 +290,255 @@ void usb_device_task(void* param)
 }
 
 
+static uint8_t s_pdrv = 0;
+static int s_disk_block_size = 0;
+
+#define LOGICAL_DISK_NUM 1
+static bool ejected[LOGICAL_DISK_NUM] = {true};
+
+
+
+
 // Invoked when device is mounted
 void tud_mount_cb(void)
 {
-  xTimerChangePeriod(blinky_tm, pdMS_TO_TICKS(BLINK_MOUNTED), 0);
+    // Reset the ejection tracking every time we're plugged into USB. This allows for us to battery
+    // power the device, eject, unplug and plug it back in to get the drive.
+    for (uint8_t i = 0; i < LOGICAL_DISK_NUM; i++) {
+        ejected[i] = false;
+    }
+
+    ESP_LOGI(__func__, "");
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
-  xTimerChangePeriod(blinky_tm, pdMS_TO_TICKS(BLINK_NOT_MOUNTED), 0);
+    ESP_LOGW(__func__, "");
 }
 
 // Invoked when usb bus is suspended
-// remote_wakeup_en : if host allow us  to perform remote wakeup
-// Within 7ms, device must draw an average of current less than 2.5 mA from bus
+// remote_wakeup_en : if host allows us to perform remote wakeup
+// USB Specs: Within 7ms, device must draw an average current less than 2.5 mA from bus
 void tud_suspend_cb(bool remote_wakeup_en)
 {
-  (void) remote_wakeup_en;
-  xTimerChangePeriod(blinky_tm, pdMS_TO_TICKS(BLINK_SUSPENDED), 0);
+    (void) remote_wakeup_en;
+    ESP_LOGW(__func__, "");
 }
 
 // Invoked when usb bus is resumed
 void tud_resume_cb(void)
 {
-  xTimerChangePeriod(blinky_tm, pdMS_TO_TICKS(BLINK_MOUNTED), 0);
+    ESP_LOGW(__func__, "");
+}
+
+// Callback invoked when WRITE10 command is completed (status received and accepted by host).
+// used to flush any pending cache.
+void tud_msc_write10_complete_cb(uint8_t lun)
+{
+    if (lun >= LOGICAL_DISK_NUM) {
+        ESP_LOGE(__func__, "invalid lun number %u", lun);
+        return;
+    }
+
+    // This write is complete, start the autoreload clock.
+    ESP_LOGD(__func__, "");
+}
+
+static bool _logical_disk_ejected(void)
+{
+    bool all_ejected = true;
+
+    for (uint8_t i = 0; i < LOGICAL_DISK_NUM; i++) {
+        all_ejected &= ejected[i];
+    }
+
+    return all_ejected;
+}
+
+
+// Invoked when received SCSI_CMD_INQUIRY
+// Application fill vendor id, product id and revision with string up to 8, 16, 4 characters respectively
+void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16], uint8_t product_rev[4])
+{
+  (void) lun;
+
+  const char vid[] = "Fleet-Monitor";
+  const char pid[] = "Mass Storage";
+  const char rev[] = "1.0";
+
+  memcpy(vendor_id  , vid, strlen(vid));
+  memcpy(product_id , pid, strlen(pid));
+  memcpy(product_rev, rev, strlen(rev));
+}
+
+// Invoked when received Test Unit Ready command.
+// return true allowing host to read/write this LUN e.g SD card inserted
+bool tud_msc_test_unit_ready_cb(uint8_t lun)
+{
+  ESP_LOGD(__func__, "");
+
+    if (lun >= LOGICAL_DISK_NUM) {
+        ESP_LOGE(__func__, "invalid lun number %u", lun);
+        return false;
+    }
+
+    if (_logical_disk_ejected()) {
+        // Set 0x3a for media not present.
+        tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3A, 0x00);
+        return false;
+    }
+
+    return true;
+}
+
+// Invoked when received SCSI_CMD_READ_CAPACITY_10 and SCSI_CMD_READ_FORMAT_CAPACITY to determine the disk size
+// Application update block count and block size
+void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size)
+{
+    ESP_LOGD(__func__, "");
+
+    if (lun >= LOGICAL_DISK_NUM) {
+        ESP_LOGE(__func__, "invalid lun number %u", lun);
+        return;
+    }
+
+    disk_ioctl(s_pdrv, GET_SECTOR_COUNT, block_count);
+    disk_ioctl(s_pdrv, GET_SECTOR_SIZE, block_size);
+    s_disk_block_size = *block_size;
+    ESP_LOGD(__func__, "GET_SECTOR_COUNT = %d，GET_SECTOR_SIZE = %d", *block_count, *block_size);
+}
+
+bool tud_msc_is_writable_cb(uint8_t lun)
+{
+    ESP_LOGD(__func__, "");
+
+    if (lun >= LOGICAL_DISK_NUM) {
+        ESP_LOGE(__func__, "invalid lun number %u", lun);
+        return false;
+    }
+
+    return true;
+}
+
+// Invoked when received Start Stop Unit command
+// - Start = 0 : stopped power mode, if load_eject = 1 : unload disk storage
+// - Start = 1 : active mode, if load_eject = 1 : load disk storage
+bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject)
+{
+    ESP_LOGI(__func__, "");
+    (void) power_condition;
+
+    if (lun >= LOGICAL_DISK_NUM) {
+        ESP_LOGE(__func__, "invalid lun number %u", lun);
+        return false;
+    }
+
+    if (load_eject) {
+        if (!start) {
+            // Eject but first flush.
+            if (disk_ioctl(s_pdrv, CTRL_SYNC, NULL) != RES_OK) {
+                return false;
+            } else {
+                ejected[lun] = true;
+            }
+        } else {
+            // We can only load if it hasn't been ejected.
+            return !ejected[lun];
+        }
+    } else {
+        if (!start) {
+            // Stop the unit but don't eject.
+            if (disk_ioctl(s_pdrv, CTRL_SYNC, NULL) != RES_OK) {
+                return false;
+            }
+        }
+
+        // Always start the unit, even if ejected. Whether media is present is a separate check.
+    }
+
+    return true;
+}
+
+// Callback invoked when received READ10 command.
+// Copy disk's data to buffer (up to bufsize) and return number of copied bytes.
+int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize)
+{
+    ESP_LOGD(__func__, "");
+
+    if (lun >= LOGICAL_DISK_NUM) {
+        ESP_LOGE(__func__, "invalid lun number %u", lun);
+        return 0;
+    }
+
+    const uint32_t block_count = bufsize / s_disk_block_size;
+    disk_read(s_pdrv, buffer, lba, block_count);
+    return block_count * s_disk_block_size;
+}
+
+// Callback invoked when received WRITE10 command.
+// Process data in buffer to disk's storage and return number of written bytes
+int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize)
+{
+    ESP_LOGD(__func__, "");
+    (void) offset;
+
+    if (lun >= LOGICAL_DISK_NUM) {
+        ESP_LOGE(__func__, "invalid lun number %u", lun);
+        return 0;
+    }
+
+    const uint32_t block_count = bufsize / s_disk_block_size;
+    disk_write(s_pdrv, buffer, lba, block_count);
+    return block_count * s_disk_block_size;
+}
+
+// Callback invoked when received an SCSI command not in built-in list below
+// - READ_CAPACITY10, READ_FORMAT_CAPACITY, INQUIRY, MODE_SENSE6, REQUEST_SENSE
+// - READ10 and WRITE10 has their own callbacks
+int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize)
+{
+    // read10 & write10 has their own callback and MUST not be handled here
+    ESP_LOGD(__func__, "");
+
+    if (lun >= LOGICAL_DISK_NUM) {
+        ESP_LOGE(__func__, "invalid lun number %u", lun);
+        return 0;
+    }
+
+    void const *response = NULL;
+    uint16_t resplen = 0;
+
+    // most scsi handled is input
+    bool in_xfer = true;
+
+    switch (scsi_cmd[0]) {
+        case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
+            // Host is about to read/write etc ... better not to disconnect disk
+            resplen = 0;
+            break;
+
+        default:
+            // Set Sense = Invalid Command Operation
+            tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
+
+            // negative means error -> tinyusb could stall and/or response with failed status
+            resplen = -1;
+            break;
+    }
+
+    // return resplen must not larger than bufsize
+    if (resplen > bufsize) {
+        resplen = bufsize;
+    }
+
+    if (response && (resplen > 0)) {
+        if (in_xfer) {
+            memcpy(buffer, response, resplen);
+        } else {
+            // SCSI output
+        }
+    }
+
+    return resplen;
 }

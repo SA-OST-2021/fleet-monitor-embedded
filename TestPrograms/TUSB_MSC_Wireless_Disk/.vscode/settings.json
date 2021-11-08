@@ -27,6 +27,10 @@
         "rmt.h": "c",
         "diskio.h": "c",
         "esp_err.h": "c",
-        "esp_vfs.h": "c"
+        "esp_vfs.h": "c",
+        "board.h": "c",
+        "board_common.h": "c",
+        "stdio.h": "c",
+        "assert.h": "c"
     }
 }

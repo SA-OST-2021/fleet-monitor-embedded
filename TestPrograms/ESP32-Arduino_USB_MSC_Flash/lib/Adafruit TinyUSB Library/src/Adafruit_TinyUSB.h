@@ -37,6 +37,8 @@
 
 #include "arduino/Adafruit_USBD_Device.h"
 #include "arduino/Adafruit_USBD_CDC.h"
+
+#include "arduino/midi/Adafruit_USBD_MIDI.h"
 #include "arduino/msc/Adafruit_USBD_MSC.h"
 
 // Initialize device hardware, stack, also Serial as CDC

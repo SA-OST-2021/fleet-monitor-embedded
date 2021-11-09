@@ -166,6 +166,7 @@ void setup()
     USBSerial.println("Error, failed to initialize flash chip!");
     while(1) yield();
   }
+  /*
   USBSerial.print("Flash chip JEDEC ID: 0x"); USBSerial.println(flash.getJEDECID(), HEX);
   USBSerial.print("Flash size: "); USBSerial.print(flash.size() / 1024); USBSerial.println(" KB");
 
@@ -184,6 +185,8 @@ void setup()
   USBSerial.println("Speed test is completed.");
   USBSerial.flush();
 
+  */
+
 
   /*
   if (!flash.eraseChip()) {
@@ -193,6 +196,9 @@ void setup()
   flash.waitUntilReady();
   USBSerial.println("Successfully erased chip!");
   */
+
+
+ /*
 
 
   // Partition the flash with 1 partition that takes the entire space.
@@ -253,10 +259,10 @@ void setup()
   USBSerial.println("Flash chip successfully formatted with new empty filesystem!");
 
 
+  */
 
 
 
-/*
 
   // Set disk vendor id, product id and revision with string up to 8, 16, 4 characters respectively
   usb_msc.setID("Adafruit", "External Flash", "1.0");
@@ -278,12 +284,12 @@ void setup()
 
 
   USBSerial.println("Adafruit TinyUSB Mass Storage External Flash example");
-  USBSerial.print("JEDEC ID: 0x"); Serial.println(flash.getJEDECID(), HEX);
-  USBSerial.print("Flash size: "); Serial.print(flash.size() / 1024); Serial.println(" KB");
+  USBSerial.print("JEDEC ID: 0x"); USBSerial.println(flash.getJEDECID(), HEX);
+  USBSerial.print("Flash size: "); USBSerial.print(flash.size() / 1024); USBSerial.println(" KB");
 
   fs_changed = true; // to print contents initially
 
-*/
+
   //delay (1000);
 }
 

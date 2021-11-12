@@ -64,24 +64,24 @@ void task_networking(void *pvParameter)
     TickType_t task_last_tick = xTaskGetTickCount();
 
     // Do init stuff
-    //wifi_init_sta();
+    wifi_init_sta();
 
-    init_eth();
+    //init_eth();
 
     while(1)
     {
         // Do loop stuff
         network_connected = wifi_connected | eth_connected;
-        /*
+        
        if(wifi_ready && wifi_connected == false){
            ESP_LOGI(TAG, "Trying to connect with %s", EXAMPLE_ESP_WIFI_SSID);
            esp_wifi_connect();
            vTaskDelay(5000);
        }
-        */
+
        if(network_connected){
            esp_http_client_config_t config = {
-            .url = "http://10.3.141.1:8080/hello-world.txt",
+            .url = "http://8.8.8.8",
             .event_handler = http_event_handle,
             };
 
@@ -235,7 +235,7 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base, int32_t
 spi_eth_module_config_t spi_eth_module_config = {
     .spi_cs_gpio = 34,  //34 for hardware / 15 for dev
     .int_gpio = 21,     //21 for hardware / 7 for dev
-    .phy_reset_gpio = -1,
+    .phy_reset_gpio = 26,
     .phy_addr = 1,
 };
 
@@ -310,7 +310,7 @@ void init_eth() {
     02:00:00 is a Locally Administered OUI range so should not be used except when testing on a LAN under your control.
     */
     ESP_ERROR_CHECK(esp_eth_ioctl(eth_handle_spi, ETH_CMD_S_MAC_ADDR, (uint8_t[]) {
-        0x04, 0x52, 0x15, 0x12, 0x34, 0x56
+        0x02, 0x00, 0x00, 0x12, 0x34, 0x56
     }));
 
     // attach Ethernet driver to TCP/IP stack

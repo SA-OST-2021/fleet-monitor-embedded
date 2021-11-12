@@ -85,6 +85,19 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
 
 void app_main(void)
 {
+	/* Setting TinyUSB up */
+    ESP_LOGI(TAG, "USB initialization");
+
+    tinyusb_config_t tusb_cfg = { 0 }; // the configuration uses default values
+    ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
+
+    tinyusb_config_cdcacm_t amc_cfg = { 0 }; // the configuration uses default values
+    ESP_ERROR_CHECK(tusb_cdc_acm_init(&amc_cfg));
+    esp_tusb_init_console(TINYUSB_CDC_ACM_0); // log to usb
+
+    ESP_LOGI(TAG, "USB initialization DONE");
+	vTaskDelay(2000);
+	
     // Initialize TCP/IP network interface (should be called only once in application)
     ESP_ERROR_CHECK(esp_netif_init());
     // Create default event loop that running in background

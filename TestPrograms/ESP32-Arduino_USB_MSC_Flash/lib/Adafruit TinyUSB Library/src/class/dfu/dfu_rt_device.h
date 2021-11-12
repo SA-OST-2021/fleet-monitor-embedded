@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2018, hathach for Adafruit
+ * Copyright (c) 2019 Sylvain Munaut <tnt@246tNt.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,35 +20,35 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
+ *
+ * This file is part of the TinyUSB stack.
  */
 
-#ifndef _TUSB_CONFIG_ARDUINO_H_
-#define _TUSB_CONFIG_ARDUINO_H_
+#ifndef _TUSB_DFU_RT_DEVICE_H_
+#define _TUSB_DFU_RT_DEVICE_H_
+
+#include "dfu.h"
 
 #ifdef __cplusplus
  extern "C" {
 #endif
 
-#if defined(ARDUINO_ARCH_SAMD)
-  #include "arduino/ports/samd/tusb_config_samd.h"
+//--------------------------------------------------------------------+
+// Application Callback API (weak is optional)
+//--------------------------------------------------------------------+
+// Invoked when a DFU_DETACH request is received and bitWillDetach is set
+void tud_dfu_runtime_reboot_to_dfu_cb(void);
 
-#elif defined(ARDUINO_NRF52_ADAFRUIT)
-  #include "arduino/ports/nrf/tusb_config_nrf.h"
-
-#elif defined(ARDUINO_ARCH_RP2040)
-  #include "arduino/ports/rp2040/tusb_config_rp2040.h"
-
-#elif defined(ARDUINO_ARCH_ESP32)
-  // Use the BSP sdk/include/arduino_tinyusb/include/tusb_config.h
-  //#include <tusb_config.h>
-  #include "tusb_config_local.h"
-
-#else
-  #error TinyUSB Arduino Library does not support your core yet
-#endif
+//--------------------------------------------------------------------+
+// Internal Class Driver API
+//--------------------------------------------------------------------+
+void     dfu_rtd_init(void);
+void     dfu_rtd_reset(uint8_t rhport);
+uint16_t dfu_rtd_open(uint8_t rhport, tusb_desc_interface_t const * itf_desc, uint16_t max_len);
+bool     dfu_rtd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);
 
 #ifdef __cplusplus
  }
 #endif
 
-#endif /* _TUSB_CONFIG_ARDUINO_H_ */
+#endif /* _TUSB_DFU_RT_DEVICE_H_ */

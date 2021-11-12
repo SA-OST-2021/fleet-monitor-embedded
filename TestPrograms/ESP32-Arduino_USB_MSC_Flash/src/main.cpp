@@ -153,7 +153,7 @@ void setup()
   USB.begin();
   USB.productName("ESP32S2-USB");
   USBSerial.begin(115200);
-  while (!USBSerial) delay(100);
+  //while (!USBSerial) delay(100);
 
 
   Serial.begin(115200);
@@ -161,11 +161,11 @@ void setup()
   Serial.println("Test Serial");
   USBSerial.println("Test Florian");
 
+  //flash.begin();
 
-  if (!flash.begin()) {
-    USBSerial.println("Error, failed to initialize flash chip!");
-    while(1) yield();
-  }
+
+  
+
   /*
   USBSerial.print("Flash chip JEDEC ID: 0x"); USBSerial.println(flash.getJEDECID(), HEX);
   USBSerial.print("Flash size: "); USBSerial.print(flash.size() / 1024); USBSerial.println(" KB");
@@ -261,34 +261,55 @@ void setup()
 
   */
 
+/*
+  while(!USBSerial)
+  {
+    delay(10);
+  }
+  delay(1000);
 
+*/
+  if (!flash.begin()) {
+    USBSerial.println("Error, failed to initialize flash chip!");
+    while(1) yield();
+  }
 
-
-  // Set disk vendor id, product id and revision with string up to 8, 16, 4 characters respectively
-  usb_msc.setID("Adafruit", "External Flash", "1.0");
-
-  // Set callback
-  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);
-
-  // Set disk size, block size should be 512 regardless of spi flash page size
-  usb_msc.setCapacity(flash.size()/512, 512);
-
-  // MSC is ready for read/write
-  usb_msc.setUnitReady(true);
-  
-  usb_msc.begin();
-
-  // Init file system on the flash
-  fatfs.begin(&flash);
-
-
-
+  //delay(1000);
   USBSerial.println("Adafruit TinyUSB Mass Storage External Flash example");
   USBSerial.print("JEDEC ID: 0x"); USBSerial.println(flash.getJEDECID(), HEX);
   USBSerial.print("Flash size: "); USBSerial.print(flash.size() / 1024); USBSerial.println(" KB");
+  //delay(1000);
+
+  // Set disk vendor id, product id and revision with string up to 8, 16, 4 characters respectively
+  usb_msc.setID("Adafruit", "External Flash", "1.0");
+  USBSerial.println("1");
+
+  // Set callback
+  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);
+  USBSerial.println("2");
+
+  // Set disk size, block size should be 512 regardless of spi flash page size
+  usb_msc.setCapacity(flash.size()/512, 512);
+  USBSerial.println("3");
+
+  // MSC is ready for read/write
+  usb_msc.setUnitReady(true);
+  USBSerial.println("4");
+  
+  usb_msc.begin();
+  USBSerial.println("5");
+
+  //delay(1000);
+
+  // Init file system on the flash
+  fatfs.begin(&flash);
+  USBSerial.println("6");
+
+
+
+  
 
   fs_changed = true; // to print contents initially
-
 
   //delay (1000);
 }

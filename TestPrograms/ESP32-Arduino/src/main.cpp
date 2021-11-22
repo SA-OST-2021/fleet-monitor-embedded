@@ -19,16 +19,13 @@ USBCDC USBSerial;
 #define STATUS_LED_GREEN 5
 #define STATUS_LED_BLUE 6
 
-#define LED 5
 
 void setup() {
   // Open serial communications and wait for port to open:
   USB.begin();
   USB.productName("ESP32");
   USBSerial.begin();
-  while (!USBSerial){
-    ;
-  }
+  //while (!USBSerial);
   xTaskCreate(task_networking,
                 "task_networking",
                 4096,

@@ -1,31 +1,19 @@
 #include <Arduino.h>
 #include "USB.h"
 
+#include "hmi.h"
 #include "utils.h"
+#include "config_parser.h"
 #include "task_networking.h"
 #include "task_can.h"
 #include "task_frame_handler.h"
 
-// TODO: Move to "hmi.h" file
-#define CAN_LED_RED       1
-#define CAN_LED_GREEN     2
-#define CAN_LED_BLUE      3
-#define STATUS_LED_RED    4
-#define STATUS_LED_GREEN  5
-#define STATUS_LED_BLUE   6
-
 USBCDC USBSerial;                 // TODO: Move to better place?
+ConfigParser configParser;        // TODO: Move to task_can
 
 void setup()
 {
-  // TODO: move to "hmi_init()"
-  pinMode(CAN_LED_RED, OUTPUT);       digitalWrite(CAN_LED_RED, 1);
-  pinMode(CAN_LED_GREEN, OUTPUT);     digitalWrite(CAN_LED_GREEN, 1);
-  pinMode(CAN_LED_BLUE, OUTPUT);      digitalWrite(CAN_LED_BLUE, 1);
-  pinMode(STATUS_LED_RED, OUTPUT);    digitalWrite(STATUS_LED_RED, 1);
-  pinMode(STATUS_LED_GREEN, OUTPUT);  digitalWrite(STATUS_LED_GREEN, 1);
-  pinMode(STATUS_LED_BLUE, OUTPUT);   digitalWrite(STATUS_LED_BLUE, 1);
-
+  hmi_init();
   utils_init("MONITOR");
   while(!USBSerial) yield();
   USBSerial.println("FleetMonitor_V0.1");
@@ -57,5 +45,5 @@ void setup()
 
 void loop()
 {
-  digitalWrite(STATUS_LED_GREEN, (millis() % 200) < 100);
+  digitalWrite(STATUS_LED_GREEN, (millis() % 200) < 100);   // TODO: Create HMI function for LED control
 }

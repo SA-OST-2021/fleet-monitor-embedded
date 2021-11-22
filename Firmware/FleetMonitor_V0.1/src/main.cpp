@@ -46,7 +46,7 @@ void setup()
   
   xTaskCreate(task_frame_handler,
                 "task_frame_handler",
-                4096,
+                16096,
                 NULL,
                 1,
                 NULL);

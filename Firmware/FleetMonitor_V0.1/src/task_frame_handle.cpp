@@ -28,9 +28,12 @@ typedef enum{
 
 
 bool send_data_to_client();
+bool get_file_from_server(file_type_t file_type);
 
 void task_frame_handler(void *pvParameter){
-  vTaskDelay(1000);
+  vTaskDelay(20000);
+  get_file_from_server(FILE_CONFIG);
+
   while(1){
       Fms frame;
       if( xQueueReceive( fmsQueue, &(frame),portMAX_DELAY ) == pdPASS ){
@@ -66,14 +69,14 @@ bool send_data_to_client(){
   String postData;
   serializeJson(doc, postData);
   status = client.post("/", contentType, postData);
-
-  int statusCode = client.responseStatusCode();§
-  //String response = client.responseBody();
+  vTaskDelay(150);
+  int statusCode = client.responseStatusCode();
+  String response = "";//client.responseBody();
 
   USBSerial.print("Status code: ");
   USBSerial.println(statusCode);
-  //Serial.print("Response: ");
-  //Serial.println(response);
+  USBSerial.print("Response: ");
+  USBSerial.println(response);
 
   USBSerial.print("Response Code: ");
   USBSerial.println(status);
@@ -88,13 +91,15 @@ bool get_file_from_server(file_type_t file_type){
   } else {
     return false;
   }
+  vTaskDelay(200);
 
   int statusCode = client.responseStatusCode();
-  String response = client.responseBody();
+  //String response = client.responseBody();
 
-  Serial.print("Status code: ");
-  Serial.println(statusCode);
-  Serial.print("Response: ");
-  Serial.println(response);
+  USBSerial.print("Status code: ");
+  USBSerial.println(statusCode);
+  //USBSerial.print("Response: ");
+  //USBSerial.println(response);
+  return true;
 }
 

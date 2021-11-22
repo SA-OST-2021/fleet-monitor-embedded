@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include "USB.h"
 
+#include "task_networking.h"
+#include "task_can.h"
+#include "task_frame_handler.h"
+
 #include "SPI.h"
 #include "SdFat.h"
 #include "Adafruit_SPIFlash.h"
@@ -8,6 +12,13 @@
 
 #include "ff.h"
 #include "diskio.h"
+
+#define CAN_LED_RED 1
+#define CAN_LED_GREEN 2
+#define CAN_LED_BLUE 3
+#define STATUS_LED_RED 4
+#define STATUS_LED_GREEN 5
+#define STATUS_LED_BLUE 6
 
 #define LED_BUILTIN   5
 #define DISK_LABEL    "MONITOR"
@@ -35,8 +46,9 @@ void setup()
 
   USB.begin();
   USB.productName("Fleet-Monitor");
-  USBSerial.begin(0);
-  USBSerial.println("ESP32-Arduino_USB_MSC_Flash");
+  //USBSerial.begin(0);
+  //USBSerial.println("ESP32-Arduino_USB_MSC_Flash");
+  
 
   if (!flash.begin())
   {
@@ -103,7 +115,41 @@ void setup()
   usb_msc.setUnitReady(true);                     // MSC is ready for read/write
   usb_msc.begin();
 
+
+  USBSerial.begin(0);
+  while(!USBSerial) yield();
+  USBSerial.println("ESP32-Arduino_USB_MSC_Flash");
+
   fs_changed = true;
+
+
+
+  xTaskCreate(task_networking,
+                "task_networking",
+                4096,
+                NULL,
+                1,
+                NULL);
+  
+  xTaskCreate(task_can,
+                "task_can",
+                4096,
+                NULL,
+                1,
+                NULL);
+  
+  xTaskCreate(task_frame_handler,
+                "task_frame_handler",
+                4096,
+                NULL,
+                1,
+                NULL);
+  
+  // start the Ethernet connection:
+  USBSerial.println("Task Initialization Done");
+
+  pinMode(STATUS_LED_GREEN, OUTPUT);
+  pinMode(CAN_LED_GREEN, OUTPUT);
 }
 
 void loop()

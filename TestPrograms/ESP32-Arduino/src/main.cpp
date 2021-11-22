@@ -6,20 +6,20 @@
 
 #include "task_networking.h"
 #include "task_can.h"
-
+#include "task_frame_handler.h"
 
 
 
 USBCDC USBSerial;
 
-#define STATUS_LED_RED 1
-#define STATUS_LED_BLUE 2
-#define STATUS_LED_GREEN 3
+#define CAN_LED_RED 1
+#define CAN_LED_GREEN 2
+#define CAN_LED_BLUE 3
+#define STATUS_LED_RED 4
+#define STATUS_LED_GREEN 5
+#define STATUS_LED_BLUE 6
 
-
-
-static QueueHandle_t tx_task_queue;
-
+#define LED 5
 
 void setup() {
   // Open serial communications and wait for port to open:
@@ -43,15 +43,23 @@ void setup() {
                 1,
                 NULL);
   
+  xTaskCreate(task_frame_handler,
+                "task_frame_handler",
+                4096,
+                NULL,
+                1,
+                NULL);
+  
   // start the Ethernet connection:
   USBSerial.println("Task Initialization Done");
 
-  pinMode(STATUS_LED_RED, OUTPUT);
+  pinMode(STATUS_LED_GREEN, OUTPUT);
+  pinMode(CAN_LED_GREEN, OUTPUT);
 }
 
 void loop() {
-    digitalWrite(STATUS_LED_RED, HIGH);  
+    digitalWrite(STATUS_LED_GREEN, HIGH);  
     vTaskDelay(400);
-    digitalWrite(STATUS_LED_RED, LOW);  
+    digitalWrite(STATUS_LED_GREEN, LOW);  
     vTaskDelay(400);
 }

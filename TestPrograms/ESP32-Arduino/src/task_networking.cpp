@@ -15,7 +15,8 @@
 EthernetClient ethclient;
 WiFiClient wificlient;
 
-Client *client;
+HttpClient client = HttpClient(ethclient, "", 8080);
+
 
 extern USBCDC USBSerial;
 
@@ -23,15 +24,16 @@ extern USBCDC USBSerial;
 
 // Ethernet Definitions
 byte mac[] = { 0x2C, 0xF7, 0xF1, 0x08, 0x39, 0x7E };
-char server[] = "www.google.com";
+char server[] = "10.3.141.1";
+int port = 8080;
 
 // Wifi Definitions
 char ssid[] = "fleet-monitor";     //  your network SSID (name)
 char pass[] = "password";  // your network password
 
-int ethernet_connected = 0;
-int wifi_connected = 0;
-int connected = 0;
+bool ethernet_connected = false;
+bool wifi_connected = false;
+bool network_connected = false;
 
 void check_connection_status();
 void eth_init();
@@ -48,39 +50,6 @@ void task_networking(void *pvParameter)
 
     while(1){
         check_connection_status();
-        if(connected){
-            if (client->connect(server, 80)) {
-                //USBSerial.print("connected to ");
-                //USBSerial.println(client->remoteIP());
-                // Make a HTTP request:
-                client->println("GET /webhp");
-                client->println("Host: www.google.com");
-                client->println("Connection: close");
-                client->println();
-            } else {
-                // if you didn't get a connection to the server:
-                USBSerial.println("connection failed");
-            }
-            vTaskDelay(2000);
-            int byteCount = 0;
-            int len = client->available();
-            if (len > 0) {
-                byte buffer[80];
-                if (len > 80) len = 80;
-                client->read(buffer, len);
-                USBSerial.write(buffer, len); // show in the serial monitor (slows some boards)
-                byteCount = byteCount + len;
-            }
-
-            // if the server's disconnected, stop the client:
-            if (!client->connected()) {
-                USBSerial.println();
-                USBSerial.println("disconnecting.");
-                client->stop();
-                USBSerial.print("Received ");
-                USBSerial.println(byteCount);
-            }
-        }
         vTaskDelayUntil(&task_last_tick, task_freq); 
     } 
 }
@@ -102,6 +71,8 @@ void check_connection_status(){
 
     static wl_status_t wifi_status = WL_NO_SHIELD;
     static IPAddress wifi_ip(0,0,0,0);
+
+    static TickType_t wifi_disconnect_time = xTaskGetTickCount();
     
     /** Ethernet stuff **/
     IPAddress no_ip(0,0,0,0);
@@ -111,17 +82,24 @@ void check_connection_status(){
         eth_harware_status = Ethernet.hardwareStatus();
         eth_link_status = Ethernet.linkStatus();
         eth_ip = Ethernet.localIP();
-        USBSerial.print("Hardware Status: ");
+        USBSerial.print("[ETH] Hardware Status: ");
         USBSerial.println(eth_harware_status == EthernetW5500 ? "UP" : "DOWN");
-        USBSerial.print("Link Status: ");
+        USBSerial.print("[ETH] Link Status: ");
         USBSerial.println(eth_link_status == LinkON ? "UP" : "DOWN");
-        USBSerial.print("IP Adress: ");
+        USBSerial.print("[ETH] IP Adress: ");
         USBSerial.println(eth_ip);
+
+        if(Ethernet.hardwareStatus() != EthernetW5500){
+            USBSerial.println("[ETH] No Hardware Found!");
+        }
+
+        if (Ethernet.localIP() == no_ip && Ethernet.linkStatus() == LinkON){
+            USBSerial.println("[ETH] Waiting for IP..");
+        }
     }
 
     // Check for Hardware connection
     if(Ethernet.hardwareStatus() != EthernetW5500){
-        USBSerial.println("No Hardware Found, trying again..");
         Ethernet.begin(mac, 1000, 1000);
     }
     // Check for Link Connection
@@ -131,7 +109,6 @@ void check_connection_status(){
 
     // Check both Link and IP
     if (Ethernet.localIP() == no_ip && Ethernet.linkStatus() == LinkON) {
-        USBSerial.println("Waiting for IP..");
         Ethernet.begin(mac, 1000, 1000);
     }  
     
@@ -142,28 +119,40 @@ void check_connection_status(){
     if(wifi_status != WiFi.status() || wifi_ip != WiFi.localIP()){
         wifi_status = WiFi.status();
         wifi_ip = WiFi.localIP();
-        USBSerial.print("WiFi Status: ");
+        USBSerial.print("[WiFi] Status: ");
         USBSerial.println(wifi_status);
-        USBSerial.print("IP Adress: ");
+        USBSerial.print("[WiFi] IP Adress: ");
         USBSerial.println(wifi_ip);
+
+        if(WiFi.status() == WL_NO_SHIELD){
+            USBSerial.println("[WiFi] Init failed, trying again..");
+        }
+        else if(WiFi.status() == WL_DISCONNECTED){
+            USBSerial.println("[WiFi] No connection");
+        } else if(WiFi.status() != WL_CONNECTED){
+            USBSerial.println("[WiFi] Waiting for Connection..");
+        }
     }
     
     if(WiFi.status() != WL_CONNECTED){
         if(WiFi.status() == WL_NO_SHIELD){
-            USBSerial.println("WiFi init failed, trying again..");
             WiFi.begin(ssid, pass);
-        } else {
-            USBSerial.println("Waiting for WiFi Connection..");
+        }
+        else{
+            if((wifi_disconnect_time + 60000) < xTaskGetTickCount()){
+                WiFi.begin(ssid, pass);
+                wifi_disconnect_time = xTaskGetTickCount();
+            }
         }
     }
 
     wifi_connected = ((WiFi.localIP() != no_ip) && (WiFi.status() == WL_CONNECTED));
 
-    if(ethernet_connected) client = &ethclient;
-    else if(wifi_connected) client = &wificlient;
-    else client = NULL;
+    if(ethernet_connected) client = HttpClient(ethclient, server, port);
+    else if(wifi_connected) client = HttpClient(ethclient, server, port);
+
+    network_connected = wifi_connected | ethernet_connected;
     
-    //connected = wifi_connected | ethernet_connected;
 }
 
 

@@ -26,9 +26,7 @@ void setup() {
   USB.begin();
   USB.productName("ESP32");
   USBSerial.begin();
-  while (!USBSerial){
-    ;
-  }
+  //while (!USBSerial);
   xTaskCreate(task_networking,
                 "task_networking",
                 4096,

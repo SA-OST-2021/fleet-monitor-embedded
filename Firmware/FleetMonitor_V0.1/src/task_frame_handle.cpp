@@ -80,7 +80,21 @@ bool send_data_to_client(){
   return true;
 }
 
-bool get_file_from_server(){
+bool get_file_from_server(file_type_t file_type){
+  if(file_type == FILE_CONFIG){
+    client.get("/config.json");
+  } else if(file_type == FILE_SYSTEM){
+    client.get("/system.json");
+  } else {
+    return false;
+  }
 
+  int statusCode = client.responseStatusCode();
+  String response = client.responseBody();
+
+  Serial.print("Status code: ");
+  Serial.println(statusCode);
+  Serial.print("Response: ");
+  Serial.println(response);
 }
 

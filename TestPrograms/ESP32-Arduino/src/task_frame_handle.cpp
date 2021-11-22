@@ -15,7 +15,11 @@
 
 extern USBCDC USBSerial;
 
-DynamicJsonDocument doc(2048);
+#define DOCUMENT_SIZE 8192
+#define NR_OF_FRAMES 32
+
+DynamicJsonDocument doc(DOCUMENT_SIZE);
+
 
 bool send_data_to_client();
 
@@ -24,7 +28,7 @@ void task_frame_handler(void *pvParameter) {
   while(1){
       Fms frame;
       if( xQueueReceive( fmsQueue, &(frame),portMAX_DELAY ) == pdPASS ){
-            StaticJsonDocument<128> entry;
+            StaticJsonDocument<256> entry;
             entry["ts"] = xTaskGetTickCount();
             char pgn[5];
             snprintf(pgn, 5, "%0X",frame.getPgn());
@@ -39,7 +43,7 @@ void task_frame_handler(void *pvParameter) {
             doc.add(entry);
             entry.clear();
             USBSerial.println(doc.size());
-            if(doc.size() >= 16){
+            if(doc.size() >= NR_OF_FRAMES){
               if(network_connected){
                 send_data_to_client();
                 serializeJson(doc, USBSerial);

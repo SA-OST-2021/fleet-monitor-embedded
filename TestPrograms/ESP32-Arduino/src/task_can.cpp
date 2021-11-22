@@ -45,9 +45,9 @@ void task_can(void *pvParameter)
 
     if(found) {
       // Check if data changed
-      
+      xQueueSend(fmsQueue,( void * ) &frame, ( TickType_t ) 0);
       if(frame.compareData(known_frames[index]) == false){
-        xQueueSend(fmsQueue,( void * ) &frame, ( TickType_t ) 0);
+        
         //USBSerial.printf("Time since last update: %d\n", known_frames[index].getTimeSinceLastUpdate());
         //print_fms_frame(frame);
         known_frames[index] = frame;

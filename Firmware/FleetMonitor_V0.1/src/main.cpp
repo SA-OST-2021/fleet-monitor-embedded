@@ -16,7 +16,27 @@ void setup()
   hmi_init();
   utils_init("MONITOR");
   while(!USBSerial) yield();
+  USBSerial.printf("\033[2J\033[1;1H");
   USBSerial.println("FleetMonitor_V0.1");
+
+  if(!configParser.loadFile("config.json"))
+  {
+    USBSerial.println("Config loading failed.");
+    return;
+  }
+  USBSerial.println("Config loading was successful.");
+
+  USBSerial.println("\n");
+  USBSerial.printf("getName(FEEE): %s\n", configParser.getName("FEEE"));
+  USBSerial.printf("getFilter(FEAE): %d\n", configParser.getFilter("FEAE"));
+  USBSerial.printf("getFilter(FD09): %d\n", configParser.getFilter("FD09"));
+  USBSerial.printf("getFilter(FE56): %d\n", configParser.getFilter("FE56"));
+  USBSerial.printf("getInterval(FEE5): %d\n", configParser.getInterval("FEE5"));
+  USBSerial.printf("getInterval(FEF5): %d\n", configParser.getInterval("FEF5"));
+  USBSerial.printf("isEnabled(FE6B): %d\n", configParser.isEnabled("FE6B"));
+  USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled("FEF2"));
+  USBSerial.println("\n");
+
 
   xTaskCreate(task_networking,
                 "task_networking",
@@ -41,13 +61,6 @@ void setup()
   
   // start the Ethernet connection:
   USBSerial.println("Task Initialization Done");
-
-  if(!configParser.loadFile("config.json"))
-  {
-    USBSerial.println("Config loading failed.");
-    return;
-  }
-  USBSerial.println("Config loading was successful.");
 }
 
 void loop()

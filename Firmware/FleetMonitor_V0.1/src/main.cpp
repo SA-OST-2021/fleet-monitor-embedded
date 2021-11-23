@@ -41,6 +41,13 @@ void setup()
   
   // start the Ethernet connection:
   USBSerial.println("Task Initialization Done");
+
+  if(!configParser.loadFile("config.json"))
+  {
+    USBSerial.println("Config loading failed.");
+    return;
+  }
+  USBSerial.println("Config loading was successful.");
 }
 
 void loop()

@@ -14,10 +14,10 @@ class ConfigParser
     bool loadFile(const char* path);
     bool loadString(const String& data);
     bool saveFile(const char* path, const String& data);
-    const char* getName(const char* pgn);
-    FilterType getFilter(const char* pgn);
-    int32_t getInterval(const char* pgn);
-    bool isEnabled(const char* pgn);
+    const char* getName(uint16_t pgn);
+    FilterType getFilter(uint16_t pgn);
+    int32_t getInterval(uint16_t pgn);
+    bool isEnabled(uint16_t pgn);
     bool sendFrameName(void);
 
   private:

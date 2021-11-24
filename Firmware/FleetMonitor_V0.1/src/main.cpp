@@ -26,14 +26,14 @@ void setup()
   USBSerial.println("Config loading was successful.");
 
   USBSerial.println("\n");
-  USBSerial.printf("getName(FEEE): %s\n", configParser.getName("FEEE"));
-  USBSerial.printf("getFilter(FEAE): %d\n", configParser.getFilter("FEAE"));
-  USBSerial.printf("getFilter(FD09): %d\n", configParser.getFilter("FD09"));
-  USBSerial.printf("getFilter(FE56): %d\n", configParser.getFilter("FE56"));
-  USBSerial.printf("getInterval(FEE5): %d\n", configParser.getInterval("FEE5"));
-  USBSerial.printf("getInterval(FEF5): %d\n", configParser.getInterval("FEF5"));
-  USBSerial.printf("isEnabled(FE6B): %d\n", configParser.isEnabled("FE6B"));
-  USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled("FEF2"));
+  USBSerial.printf("getName(FEEE): %s\n", configParser.getName(0xFEEE));
+  USBSerial.printf("getFilter(FEAE): %d\n", configParser.getFilter(0xFEAE));
+  USBSerial.printf("getFilter(FD09): %d\n", configParser.getFilter(0xFD09));
+  USBSerial.printf("getFilter(FE56): %d\n", configParser.getFilter(0xFE56));
+  USBSerial.printf("getInterval(FEE5): %d\n", configParser.getInterval(0xFEE5));
+  USBSerial.printf("getInterval(FEF5): %d\n", configParser.getInterval(0xFEF5));
+  USBSerial.printf("isEnabled(FE6B): %d\n", configParser.isEnabled(0xFE6B));
+  USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled(0xFEF2));
   USBSerial.println("\n");
 
   xTaskCreate(task_hmi,

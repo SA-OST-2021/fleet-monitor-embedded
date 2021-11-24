@@ -41,11 +41,13 @@ bool ConfigParser::saveFile(const char* path, const String& data)
   return true;
 }
 
-const char* ConfigParser::getName(const char* pgn)
+const char* ConfigParser::getName(uint16_t pgn)
 {
+  char pgnStr[5];
+  snprintf(pgnStr, sizeof(pgnStr), "%04X", pgn);
   for (JsonVariant value : doc["frames"].as<JsonArray>())
   {
-    if(strncmp(value["pgn"].as<const char*>(), pgn, 4) == 0)
+    if(strncmp(value["pgn"].as<const char*>(), pgnStr, 4) == 0)
     {
       return value["name"].as<const char*>();
     }
@@ -53,11 +55,13 @@ const char* ConfigParser::getName(const char* pgn)
   return "Unknown frame";
 }
 
-FilterType ConfigParser::getFilter(const char* pgn)
+FilterType ConfigParser::getFilter(uint16_t pgn)
 {
+  char pgnStr[5];
+  snprintf(pgnStr, sizeof(pgnStr), "%04X", pgn);
   for (JsonVariant value : doc["frames"].as<JsonArray>())
   {
-    if(strncmp(value["pgn"].as<const char*>(), pgn, 4) == 0)
+    if(strncmp(value["pgn"].as<const char*>(), pgnStr, 4) == 0)
     {
       if(strcmp(value["filter"].as<const char*>(), "nofilter") == 0) return NO_FILTER;
       if(strcmp(value["filter"].as<const char*>(), "change")   == 0) return ON_CHANGE;
@@ -68,11 +72,13 @@ FilterType ConfigParser::getFilter(const char* pgn)
   return (FilterType) -1;
 }
 
-int32_t ConfigParser::getInterval(const char* pgn)
+int32_t ConfigParser::getInterval(uint16_t pgn)
 {
+  char pgnStr[5];
+  snprintf(pgnStr, sizeof(pgnStr), "%04X", pgn);
   for (JsonVariant value : doc["frames"].as<JsonArray>())
   {
-    if(strncmp(value["pgn"].as<const char*>(), pgn, 4) == 0)
+    if(strncmp(value["pgn"].as<const char*>(), pgnStr, 4) == 0)
     {
       if(value.containsKey("time"))
       {
@@ -83,11 +89,13 @@ int32_t ConfigParser::getInterval(const char* pgn)
   return -1;
 }
 
-bool ConfigParser::isEnabled(const char* pgn)
+bool ConfigParser::isEnabled(uint16_t pgn)
 {
+  char pgnStr[5];
+  snprintf(pgnStr, sizeof(pgnStr), "%04X", pgn);
   for (JsonVariant value : doc["frames"].as<JsonArray>())
   {
-    if(strncmp(value["pgn"].as<const char*>(), pgn, 4) == 0)
+    if(strncmp(value["pgn"].as<const char*>(), pgnStr, 4) == 0)
     {
       return value["active"].as<bool>();
     }

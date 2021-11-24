@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include "USB.h"
 
-#include "hmi.h"
 #include "utils.h"
 #include "config_parser.h"
+#include "hmi_task.h"
 #include "task_networking.h"
 #include "task_can.h"
 #include "task_frame_handler.h"
@@ -13,7 +13,6 @@ ConfigParser configParser;        // TODO: Move to task_can
 
 void setup()
 {
-  hmi_init();
   utils_init("MONITOR");
   while(!USBSerial) yield();
   USBSerial.printf("\033[2J\033[1;1H");
@@ -37,6 +36,12 @@ void setup()
   USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled("FEF2"));
   USBSerial.println("\n");
 
+  xTaskCreate(task_hmi,
+                "task_hmi",
+                1024,
+                NULL,
+                1,
+                NULL);
 
   xTaskCreate(task_networking,
                 "task_networking",
@@ -65,5 +70,4 @@ void setup()
 
 void loop()
 {
-  digitalWrite(STATUS_LED_GREEN, (millis() % 200) < 100);   // TODO: Create HMI function for LED control
 }

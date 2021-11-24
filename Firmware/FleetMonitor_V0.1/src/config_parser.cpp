@@ -6,7 +6,6 @@ extern USBCDC USBSerial;
 
 ConfigParser::ConfigParser(void)
 {
-
 }
 
 bool ConfigParser::loadFile(const char* path)
@@ -33,11 +32,13 @@ bool ConfigParser::loadFile(const char* path)
 bool ConfigParser::loadString(const String& data)
 {
 
+  return true;
 }
 
 bool ConfigParser::saveFile(const char* path, const String& data)
 {
 
+  return true;
 }
 
 const char* ConfigParser::getName(const char* pgn)
@@ -49,7 +50,7 @@ const char* ConfigParser::getName(const char* pgn)
       return value["name"].as<const char*>();
     }
   }
-  return "";
+  return "Unknown frame";
 }
 
 FilterType ConfigParser::getFilter(const char* pgn)
@@ -59,7 +60,7 @@ FilterType ConfigParser::getFilter(const char* pgn)
     if(strncmp(value["pgn"].as<const char*>(), pgn, 4) == 0)
     {
       if(strcmp(value["filter"].as<const char*>(), "nofilter") == 0) return NO_FILTER;
-      if(strcmp(value["filter"].as<const char*>(), "change") == 0) return ON_CHANGE;
+      if(strcmp(value["filter"].as<const char*>(), "change")   == 0) return ON_CHANGE;
       if(strcmp(value["filter"].as<const char*>(), "interval") == 0) return MAX_INTERVAL;      
       return (FilterType) -1;
     }
@@ -90,6 +91,19 @@ bool ConfigParser::isEnabled(const char* pgn)
     {
       return value["active"].as<bool>();
     }
+  }
+  if(doc.containsKey("unknownframes"))
+  {
+    return doc["unknownframes"].as<bool>();
+  }
+  return false;
+}
+
+bool ConfigParser::sendFrameName(void)
+{
+  if(doc.containsKey("framename"))
+  {
+    return doc["framename"].as<bool>();
   }
   return false;
 }

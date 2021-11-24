@@ -18,6 +18,7 @@ class ConfigParser
     FilterType getFilter(const char* pgn);
     int32_t getInterval(const char* pgn);
     bool isEnabled(const char* pgn);
+    bool sendFrameName(void);
 
   private:
     StaticJsonDocument<MAX_FILE_SIZE> doc;

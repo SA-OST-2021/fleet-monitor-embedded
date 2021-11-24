@@ -1,9 +1,9 @@
 #pragma once
 
-#include <ArduinoHttpClient.h>
+#include "../../HTTPClient/src/HTTPClient.h"
 
 void task_networking(void *pvParameter);
 
-extern HttpClient client;
+extern HTTPClient client;
 
 extern bool network_connected;

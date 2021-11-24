@@ -209,8 +209,6 @@ public:
 };
 
 
-
-
 class EthernetClient : public Client {
 public:
 	EthernetClient() : sockindex(MAX_SOCK_NUM), _timeout(1000) { }

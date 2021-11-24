@@ -31,8 +31,11 @@ bool send_data_to_client();
 bool get_file_from_server(file_type_t file_type);
 
 void task_frame_handler(void *pvParameter){
-  vTaskDelay(20000);
-  get_file_from_server(FILE_CONFIG);
+  while(1){
+      vTaskDelay(10000);
+    get_file_from_server(FILE_CONFIG);
+  }
+  
 
   while(1){
       Fms frame;
@@ -65,41 +68,37 @@ void task_frame_handler(void *pvParameter){
 
 bool send_data_to_client(){
   int status;
-  String contentType = "application/x-www-form-urlencoded";
   String postData;
   serializeJson(doc, postData);
-  status = client.post("/", contentType, postData);
-  vTaskDelay(150);
-  int statusCode = client.responseStatusCode();
-  String response = "";//client.responseBody();
-
-  USBSerial.print("Status code: ");
-  USBSerial.println(statusCode);
-  USBSerial.print("Response: ");
-  USBSerial.println(response);
+  client.setURL("http://10.3.141.1:8080");
+  status = client.POST(postData);
+  String response = client.getString();
 
   USBSerial.print("Response Code: ");
   USBSerial.println(status);
+  USBSerial.print("Response: ");
+  USBSerial.println(response);
+
+  
   return true;
 }
 
 bool get_file_from_server(file_type_t file_type){
   if(file_type == FILE_CONFIG){
-    client.get("/config.json");
+    client.setURL("http://10.3.141.1:8080/config.json");
   } else if(file_type == FILE_SYSTEM){
-    client.get("/system.json");
+    client.setURL("http://10.3.141.1:8080/system.json");
   } else {
     return false;
   }
-  vTaskDelay(200);
-
-  int statusCode = client.responseStatusCode();
-  //String response = client.responseBody();
-
+  int statusCode = client.GET();
+  
+  //vTaskDelay(250);
   USBSerial.print("Status code: ");
   USBSerial.println(statusCode);
-  //USBSerial.print("Response: ");
-  //USBSerial.println(response);
+
+  USBSerial.println(client.getString());
+
   return true;
 }
 

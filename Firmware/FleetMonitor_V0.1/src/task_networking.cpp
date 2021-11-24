@@ -12,10 +12,12 @@
 #include <WiFiAP.h>
 #include <USB.h>
 
+
+
 EthernetClient ethclient;
 WiFiClient wificlient;
 
-HttpClient client = HttpClient(ethclient, "", 8080);
+
 
 
 extern USBCDC USBSerial;
@@ -24,8 +26,10 @@ extern USBCDC USBSerial;
 
 // Ethernet Definitions
 byte mac[] = { 0x2C, 0xF7, 0xF1, 0x08, 0x39, 0x7E };
-char server[] = "10.3.141.1";
-int port = 8080;
+String server = "http://jsonplaceholder.typicode.com/comments?id=10";
+int port = 80;
+
+HTTPClient client;
 
 // Wifi Definitions
 char ssid[] = "fleet-monitor";     //  your network SSID (name)
@@ -148,8 +152,8 @@ void check_connection_status(){
 
     wifi_connected = ((WiFi.localIP() != no_ip) && (WiFi.status() == WL_CONNECTED));
 
-    if(ethernet_connected) client = HttpClient(ethclient, server, port);
-    else if(wifi_connected) client = HttpClient(ethclient, server, port);
+    if(ethernet_connected) client.begin(ethclient, server);
+    else if(wifi_connected) client.begin(ethclient, server); // TODO change to wifi / add port
 
     network_connected = wifi_connected | ethernet_connected;
     

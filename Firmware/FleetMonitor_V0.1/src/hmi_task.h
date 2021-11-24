@@ -9,4 +9,4 @@
 #define STATUS_LED_GREEN  5
 #define STATUS_LED_BLUE   6
 
-void hmi_init(void);
+void task_hmi(void *pvParameter);

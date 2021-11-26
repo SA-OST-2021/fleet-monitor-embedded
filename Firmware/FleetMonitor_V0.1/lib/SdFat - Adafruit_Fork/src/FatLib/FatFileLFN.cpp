@@ -23,6 +23,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #include "FatFile.h"
+
+#include "USB.h"
+extern USBCDC USBSerial;
+
 //------------------------------------------------------------------------------
 //
 uint8_t FatFile::lfnChecksum(uint8_t* name) {
@@ -303,12 +307,16 @@ bool FatFile::open(FatFile* dirFile, fname_t* fname, oflag_t oflag) {
   ldir_t* ldir;
   size_t len = fname->len;
 
+  USBSerial.println("open entered");
+
   if (!dirFile->isDir() || isOpen()) {
     DBG_FAIL_MACRO;
+    USBSerial.println("1");
     goto fail;
   }
   // Number of directory entries needed.
   freeNeed = fname->flags & FNAME_FLAG_NEED_LFN ? 1 + (len + 12)/13 : 1;
+  USBSerial.println("2");
 
   dirFile->rewind();
   while (1) {
@@ -316,10 +324,12 @@ bool FatFile::open(FatFile* dirFile, fname_t* fname, oflag_t oflag) {
     dir = dirFile->readDirCache(true);
     if (!dir) {
       if (dirFile->getError()) {
+        USBSerial.println("3");
         DBG_FAIL_MACRO;
         goto fail;
       }
       // At EOF
+      USBSerial.println("4");
       goto create;
     }
     if (dir->name[0] == DIR_NAME_DELETED || dir->name[0] == DIR_NAME_FREE) {
@@ -330,6 +340,7 @@ bool FatFile::open(FatFile* dirFile, fname_t* fname, oflag_t oflag) {
         freeFound++;
       }
       if (dir->name[0] == DIR_NAME_FREE) {
+        USBSerial.println("5");
         goto create;
       }
     } else {
@@ -344,6 +355,7 @@ bool FatFile::open(FatFile* dirFile, fname_t* fname, oflag_t oflag) {
       ldir_t *ldir = reinterpret_cast<ldir_t*>(dir);
       if (!lfnOrd) {
         if ((ldir->ord & LDIR_ORD_LAST_LONG_ENTRY) == 0) {
+
           continue;
         }
         lfnOrd = ord = ldir->ord & 0X1F;
@@ -378,11 +390,13 @@ bool FatFile::open(FatFile* dirFile, fname_t* fname, oflag_t oflag) {
         if (1 == ord && lfnChecksum(dir->name) == chksum) {
           goto found;
         }
+        USBSerial.println("6");
         DBG_FAIL_MACRO;
         goto fail;
       }
       if (!memcmp(dir->name, fname->sfn, sizeof(fname->sfn))) {
         if (!(fname->flags & FNAME_FLAG_LOST_CHARS)) {
+          USBSerial.println("7");
           goto found;
         }
         fnameFound = true;
@@ -396,13 +410,16 @@ found:
   // Don't open if create only.
   if (oflag & O_EXCL) {
     DBG_FAIL_MACRO;
+    USBSerial.println("8");
     goto fail;
   }
+  USBSerial.println("9");
   goto open;
 
 create:
   // don't create unless O_CREAT and write mode.
   if (!(oflag & O_CREAT) || !isWriteMode(oflag)) {
+    USBSerial.println("10");
     DBG_FAIL_MACRO;
     goto fail;
   }
@@ -415,6 +432,7 @@ create:
     dir = dirFile->readDirCache();
     if (!dir) {
       if (dirFile->getError()) {
+        USBSerial.println("11");
         DBG_FAIL_MACRO;
         goto fail;
       }
@@ -426,6 +444,7 @@ create:
   while (freeFound < freeNeed) {
     // Will fail if FAT16 root.
     if (!dirFile->addDirCluster()) {
+      USBSerial.println("12");
       DBG_FAIL_MACRO;
       goto fail;
     }
@@ -437,10 +456,12 @@ create:
   }
   if (fnameFound) {
     if (!dirFile->lfnUniqueSfn(fname)) {
+      USBSerial.println("13");
       goto fail;
     }
   }
   if (!dirFile->seekSet(32UL*freeIndex)) {
+    USBSerial.println("14");
     DBG_FAIL_MACRO;
     goto fail;
   }
@@ -448,6 +469,7 @@ create:
   for (uint8_t ord = lfnOrd ; ord ; ord--) {
     ldir = reinterpret_cast<ldir_t*>(dirFile->readDirCache());
     if (!ldir) {
+      USBSerial.println("15");
       DBG_FAIL_MACRO;
       goto fail;
     }
@@ -462,6 +484,7 @@ create:
   curIndex = dirFile->m_curPosition/32;
   dir = dirFile->readDirCache();
   if (!dir) {
+    USBSerial.println("16");
     DBG_FAIL_MACRO;
     goto fail;
   }
@@ -499,6 +522,7 @@ open:
   // open entry in cache.
   if (!openCachedEntry(dirFile, curIndex, oflag, lfnOrd)) {
     DBG_FAIL_MACRO;
+    USBSerial.println("17");
     goto fail;
   }
   return true;

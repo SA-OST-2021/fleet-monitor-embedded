@@ -26,7 +26,7 @@
 
 #pragma once
 #include "tusb_option.h"
-#include "sdkconfig.h"
+#include "../../sdkconfig.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,8 +97,8 @@ extern "C" {
 // Enabled Drivers
 #define CFG_TUD_CDC 				CONFIG_TINYUSB_CDC_ENABLED
 #define CFG_TUD_MSC 				CONFIG_TINYUSB_MSC_ENABLED
-#define CFG_TUD_HID 				CONFIG_TINYUSB_HID_ENABLED
-#define CFG_TUD_MIDI 				CONFIG_TINYUSB_MIDI_ENABLED
+#define CFG_TUD_HID 				CONFIG_TINYUSB_HID_DISABLED
+#define CFG_TUD_MIDI 				CONFIG_TINYUSB_MIDI_DISABLED
 #define CFG_TUD_CUSTOM_CLASS 		CONFIG_TINYUSB_CUSTOM_CLASS_ENABLED
 #define CFG_TUD_DFU_RUNTIME			CONFIG_TINYUSB_DFU_RT_ENABLED
 #define CFG_TUD_VENDOR 				CONFIG_TINYUSB_VENDOR_ENABLED

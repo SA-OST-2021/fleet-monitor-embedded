@@ -18,8 +18,8 @@ ConfigParser configParser;  // TODO: Move to task_can
 void setup() {
   utils_init("MONITOR");
   // while(!USBSerial) yield();
-  USBSerial.printf("\033[2J\033[1;1H");
-  USBSerial.println("FleetMonitor_V0.1");
+  //USBSerial.printf("\033[2J\033[1;1H");
+  //USBSerial.println("FleetMonitor_V0.1");
 
   /*
     if(!systemParser.loadFile("system.json"))

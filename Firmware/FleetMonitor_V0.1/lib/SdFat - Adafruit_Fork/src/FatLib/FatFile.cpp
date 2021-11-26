@@ -24,6 +24,10 @@
  */
 #include "FatFile.h"
 #include "FatFileSystem.h"
+
+#include "USB.h"
+extern USBCDC USBSerial;
+
 //------------------------------------------------------------------------------
 // Pointer to cwd directory.
 FatFile* FatFile::m_cwd = 0;

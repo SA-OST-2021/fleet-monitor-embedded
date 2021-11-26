@@ -49,17 +49,17 @@ void setup() {
   USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled(0xFEF2));
   USBSerial.println("\n");
   */
-
-  USBSerial.println("\n");
-  USBSerial.printf("getSsid(): %s\n", systemParser.getSsid());
-  USBSerial.printf("getPassword(): %s\n", systemParser.getPassword());
-  USBSerial.printf("getHostIp(): %s\n", systemParser.getHostIp());
-  USBSerial.printf("getHostPort(): %d\n", systemParser.getHostPort());
-  USBSerial.printf("getConnectionType(): %d\n", systemParser.getConnectionType());
-  USBSerial.printf("getConfigMode(): %d\n", systemParser.getConfigMode());
-  USBSerial.printf("getBootloaderMode(): %d\n", systemParser.getBootloaderMode());
-  USBSerial.println("\n");
-
+  /*
+    USBSerial.println("\n");
+    USBSerial.printf("getSsid(): %s\n", systemParser.getSsid());
+    USBSerial.printf("getPassword(): %s\n", systemParser.getPassword());
+    USBSerial.printf("getHostIp(): %s\n", systemParser.getHostIp());
+    USBSerial.printf("getHostPort(): %d\n", systemParser.getHostPort());
+    USBSerial.printf("getConnectionType(): %d\n", systemParser.getConnectionType());
+    USBSerial.printf("getConfigMode(): %d\n", systemParser.getConfigMode());
+    USBSerial.printf("getBootloaderMode(): %d\n", systemParser.getBootloaderMode());
+    USBSerial.println("\n");
+  */
   xTaskCreate(task_hmi, "task_hmi", 1024, NULL, 1, NULL);
 
   xTaskCreate(task_networking, "task_networking", 14096, NULL, 1, NULL);

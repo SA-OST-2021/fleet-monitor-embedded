@@ -21,32 +21,32 @@ bool utils_init(const char* labelName, bool forceFormat) {
   USB.productName("Fleet-Monitor");
   USBSerial.begin(0);
   USBSerial.println("ESP32-Arduino_USB_MSC_Flash");
+  /*
+    if (!flash.begin()) {
+      USBSerial.println("Error, failed to initialize flash chip!");
+      return 0;
+    }
 
-  if (!flash.begin()) {
-    USBSerial.println("Error, failed to initialize flash chip!");
-    return 0;
-  }
+    if (!fatfs.begin(&flash) || forceFormat)  // Check if disk must be formated
+    {
+      USBSerial.println("No FAT File system found, try to format disk...");
+      utils_format(labelName);
+    }
 
-  if (!fatfs.begin(&flash) || forceFormat)  // Check if disk must be formated
-  {
-    USBSerial.println("No FAT File system found, try to format disk...");
-    utils_format(labelName);
-  }
+    USBSerial.println("Adafruit TinyUSB Mass Storage External Flash example");
+    USBSerial.print("JEDEC ID: 0x");
+    USBSerial.println(flash.getJEDECID(), HEX);
+    USBSerial.print("Flash size: ");
+    USBSerial.print(flash.size() / 1024);
+    USBSerial.println(" KB");
 
-  USBSerial.println("Adafruit TinyUSB Mass Storage External Flash example");
-  USBSerial.print("JEDEC ID: 0x");
-  USBSerial.println(flash.getJEDECID(), HEX);
-  USBSerial.print("Flash size: ");
-  USBSerial.print(flash.size() / 1024);
-  USBSerial.println(" KB");
-
-  usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
-  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
-  usb_msc.setCapacity(flash.size() / 512,
-                      512);    // Set disk size, block size should be 512 regardless of spi flash page size
-  usb_msc.setUnitReady(true);  // MSC is ready for read/write
-  usb_msc.begin();
-
+    usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
+    usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
+    usb_msc.setCapacity(flash.size() / 512,
+                        512);    // Set disk size, block size should be 512 regardless of spi flash page size
+    usb_msc.setUnitReady(true);  // MSC is ready for read/write
+    usb_msc.begin();
+  */
   // while(!USBSerial) yield();
   /*
 

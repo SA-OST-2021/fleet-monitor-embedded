@@ -1,25 +1,24 @@
-#include <Arduino.h>
 #include "USB.h"
+#include <Arduino.h>
 
-#include "utils.h"
 #include "config_parser.h"
 #include "hmi_task.h"
-#include "task_networking.h"
 #include "task_can.h"
 #include "task_frame_handler.h"
+#include "task_networking.h"
+#include "utils.h"
 
-USBCDC USBSerial;                 // TODO: Move to better place?
-ConfigParser configParser;        // TODO: Move to task_can
+USBCDC USBSerial;          // TODO: Move to better place?
+ConfigParser configParser; // TODO: Move to task_can
 
-void setup()
-{
+void setup() {
   utils_init("MONITOR");
-  while(!USBSerial) yield();
+  while (!USBSerial)
+    yield();
   USBSerial.printf("\033[2J\033[1;1H");
   USBSerial.println("FleetMonitor_V0.1");
 
-  if(!configParser.loadFile("config.json"))
-  {
+  if (!configParser.loadFile("config.json")) {
     USBSerial.println("Config loading failed.");
     return;
   }
@@ -36,38 +35,16 @@ void setup()
   USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled(0xFEF2));
   USBSerial.println("\n");
 
-  xTaskCreate(task_hmi,
-                "task_hmi",
-                1024,
-                NULL,
-                1,
-                NULL);
+  xTaskCreate(task_hmi, "task_hmi", 1024, NULL, 1, NULL);
 
-  xTaskCreate(task_networking,
-                "task_networking",
-                4096,
-                NULL,
-                1,
-                NULL);
-  
-  xTaskCreate(task_can,
-                "task_can",
-                4096,
-                NULL,
-                1,
-                NULL);
-  
-  xTaskCreate(task_frame_handler,
-                "task_frame_handler",
-                16096,
-                NULL,
-                1,
-                NULL);
-  
+  xTaskCreate(task_networking, "task_networking", 14096, NULL, 1, NULL);
+
+  xTaskCreate(task_can, "task_can", 14096, NULL, 1, NULL);
+
+  xTaskCreate(task_frame_handler, "task_frame_handler", 16096, NULL, 3, NULL);
+
   // start the Ethernet connection:
   USBSerial.println("Task Initialization Done");
 }
 
-void loop()
-{
-}
+void loop() {}

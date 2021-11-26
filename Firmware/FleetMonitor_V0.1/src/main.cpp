@@ -2,6 +2,7 @@
 #include "USB.h"
 
 #include "utils.h"
+#include "system_parser.h"
 #include "config_parser.h"
 #include "hmi_task.h"
 #include "task_networking.h"
@@ -9,14 +10,24 @@
 #include "task_frame_handler.h"
 
 USBCDC USBSerial;                 // TODO: Move to better place?
+FatFileSystem fatfs;
+SystemParser systemParser;
 ConfigParser configParser;        // TODO: Move to task_can
 
 void setup()
 {
   utils_init("MONITOR");
-  while(!USBSerial) yield();
+  //while(!USBSerial) yield();
   USBSerial.printf("\033[2J\033[1;1H");
   USBSerial.println("FleetMonitor_V0.1");
+
+/*
+  if(!systemParser.loadFile("system.json"))
+  {
+    USBSerial.println("System config loading failed.");
+    return;
+  }
+  USBSerial.println("System config loading was successful.");
 
   if(!configParser.loadFile("config.json"))
   {
@@ -24,7 +35,9 @@ void setup()
     return;
   }
   USBSerial.println("Config loading was successful.");
+*/
 
+  /*
   USBSerial.println("\n");
   USBSerial.printf("getName(FEEE): %s\n", configParser.getName(0xFEEE));
   USBSerial.printf("getFilter(FEAE): %d\n", configParser.getFilter(0xFEAE));
@@ -35,6 +48,18 @@ void setup()
   USBSerial.printf("isEnabled(FE6B): %d\n", configParser.isEnabled(0xFE6B));
   USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled(0xFEF2));
   USBSerial.println("\n");
+  */
+
+  USBSerial.println("\n");
+  USBSerial.printf("getSsid(): %s\n", systemParser.getSsid());
+  USBSerial.printf("getPassword(): %s\n", systemParser.getPassword());
+  USBSerial.printf("getHostIp(): %s\n", systemParser.getHostIp());
+  USBSerial.printf("getHostPort(): %d\n", systemParser.getHostPort());
+  USBSerial.printf("getConnectionType(): %d\n", systemParser.getConnectionType());
+  USBSerial.printf("getConfigMode(): %d\n", systemParser.getConfigMode());
+  USBSerial.printf("getBootloaderMode(): %d\n", systemParser.getBootloaderMode());
+  USBSerial.println("\n");
+
 
   xTaskCreate(task_hmi,
                 "task_hmi",

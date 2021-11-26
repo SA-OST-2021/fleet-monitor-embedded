@@ -1,8 +1,9 @@
 #include "config_parser.h"
-#include "SdFat.h"
+#include "utils.h"
 #include "USB.h"
 
 extern USBCDC USBSerial;
+extern FatFileSystem fatfs;
 
 ConfigParser::ConfigParser(void)
 {
@@ -10,8 +11,10 @@ ConfigParser::ConfigParser(void)
 
 bool ConfigParser::loadFile(const char* path)
 {
-  File file;
-  if(!file.open(path))
+  filePath = path;
+  File file = fatfs.open(filePath);
+
+  if(!file)
   {
     USBSerial.println("open file failed");
     return false;
@@ -29,9 +32,14 @@ bool ConfigParser::loadFile(const char* path)
   return true;
 }
 
-bool ConfigParser::loadString(const String& data)
+bool ConfigParser::loadString(Client& client, bool saveFile)
 {
-
+  DeserializationError error = deserializeJson(doc, client);
+  if (error)
+  {
+    USBSerial.printf("Failed to read file, using default configuration: %d\n", error);
+    return false;
+  }
   return true;
 }
 

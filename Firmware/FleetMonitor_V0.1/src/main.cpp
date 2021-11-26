@@ -49,7 +49,7 @@ void setup()
   USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled(0xFEF2));
   USBSerial.println("\n");
   */
-
+/*
   USBSerial.println("\n");
   USBSerial.printf("getSsid(): %s\n", systemParser.getSsid());
   USBSerial.printf("getPassword(): %s\n", systemParser.getPassword());
@@ -59,7 +59,7 @@ void setup()
   USBSerial.printf("getConfigMode(): %d\n", systemParser.getConfigMode());
   USBSerial.printf("getBootloaderMode(): %d\n", systemParser.getBootloaderMode());
   USBSerial.println("\n");
-
+*/
 
   xTaskCreate(task_hmi,
                 "task_hmi",

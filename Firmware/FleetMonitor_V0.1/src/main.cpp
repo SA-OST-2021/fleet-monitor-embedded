@@ -17,7 +17,7 @@ ConfigParser configParser;  // TODO: Move to task_can
 
 void setup() {
   utils_init("MONITOR");
-  // while(!USBSerial) yield();
+  while (!USBSerial) yield();
   USBSerial.printf("\033[2J\033[1;1H");
   USBSerial.println("FleetMonitor_V0.1");
 
@@ -66,7 +66,7 @@ void setup() {
 
   xTaskCreate(task_can, "task_can", 14096, NULL, 1, NULL);
 
-  xTaskCreate(task_frame_handler, "task_frame_handler", 16096, NULL, 3, NULL);
+  xTaskCreate(task_frame_handler, "task_frame_handler", 64096, NULL, 3, NULL);
 
   // start the Ethernet connection:
   USBSerial.println("Task Initialization Done");

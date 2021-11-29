@@ -18,34 +18,60 @@ WiFiClient wificlient;
 extern USBCDC USBSerial;
 
 #define TASK_NETWORKING_FREQ 500
+#define CONFIG_LOAD_TIMEOUT  5000
 
 // Ethernet Definitions
 byte mac[] = {0x2C, 0xF7, 0xF1, 0x08, 0x39, 0x7E};
 
 HTTPClient client;
 
+ConfigParser config;
+
 // Wifi Definitions
-char ssid[] = "fleet-monitor"; //  your network SSID (name)
-char pass[] = "password";      // your network password
+char ssid[] = "fleet-monitor";  //  your network SSID (name)
+char pass[] = "password";       // your network password
 
 bool ethernet_connected = false;
 bool wifi_connected = false;
 bool network_connected = false;
 
+bool config_loaded = false;
+
+typedef enum {
+  FILE_UNDEFINED,
+  FILE_CONFIG,
+  FILE_SYSTEM,
+} file_type_t;
+
 void check_connection_status();
 void eth_init();
 void wifi_init();
 
-void task_networking(void *pvParameter) {
+bool get_file_from_server(file_type_t file_type);
 
+void task_networking(void *pvParameter) {
   eth_init();
   wifi_init();
 
   const TickType_t task_freq = TASK_NETWORKING_FREQ;
   TickType_t task_last_tick = xTaskGetTickCount();
-
+  TickType_t config_load_timeout = xTaskGetTickCount();
   while (1) {
     check_connection_status();
+
+    if (network_connected && !config_loaded) {
+      if (config_load_timeout + CONFIG_LOAD_TIMEOUT < xTaskGetTickCount()) {
+        USBSerial.println("Loading config from server");
+        if (get_file_from_server(FILE_CONFIG)) {
+          USBSerial.println("Config loading successful!");
+          config_loaded = true;
+        } else {
+          USBSerial.println("Config loading failed, trying again..");
+          config_load_timeout = xTaskGetTickCount();
+        }
+      }
+    }
+
     vTaskDelayUntil(&task_last_tick, task_freq);
   }
 }
@@ -71,8 +97,7 @@ void check_connection_status() {
   IPAddress no_ip(0, 0, 0, 0);
 
   // Diagnostics Print, only on change
-  if (eth_harware_status != Ethernet.hardwareStatus() ||
-      eth_link_status != Ethernet.linkStatus() ||
+  if (eth_harware_status != Ethernet.hardwareStatus() || eth_link_status != Ethernet.linkStatus() ||
       eth_ip != Ethernet.localIP()) {
     eth_harware_status = Ethernet.hardwareStatus();
     eth_link_status = Ethernet.linkStatus();
@@ -107,8 +132,7 @@ void check_connection_status() {
     Ethernet.begin(mac, 1000, 1000);
   }
 
-  ethernet_connected =
-      ((Ethernet.localIP() != no_ip) && (Ethernet.linkStatus() == LinkON));
+  ethernet_connected = ((Ethernet.localIP() != no_ip) && (Ethernet.linkStatus() == LinkON));
 
   /** WiFi Stuff **/
   // Diagnostics Print, only on change
@@ -140,13 +164,29 @@ void check_connection_status() {
     }
   }
 
-  wifi_connected =
-      ((WiFi.localIP() != no_ip) && (WiFi.status() == WL_CONNECTED));
+  wifi_connected = ((WiFi.localIP() != no_ip) && (WiFi.status() == WL_CONNECTED));
 
-  if (ethernet_connected)
+  if (ethernet_connected && !network_connected)
     client.begin(ethclient, "http://");
-  else if (wifi_connected)
-    client.begin(ethclient, "http://"); // TODO change to wifi / add port
+  else if (wifi_connected && !network_connected)
+    client.begin(ethclient, "http://");  // TODO change to wifi / add port
 
   network_connected = wifi_connected | ethernet_connected;
+}
+
+bool get_file_from_server(file_type_t file_type) {
+  if (file_type == FILE_CONFIG) {
+    client.setURL("http://10.3.141.1:8080/config.json");
+  } else if (file_type == FILE_SYSTEM) {
+    client.setURL("http://10.3.141.1:8080/system.json");
+  } else {
+    return false;
+  }
+  int statusCode = client.GET();
+  if (statusCode != 200) return false;
+  USBSerial.print("Status code: ");
+  USBSerial.println(statusCode);
+  // client.getStream()
+  return config.loadString(client.getStream(), true);
+  // USBSerial.println(client.getString());
 }

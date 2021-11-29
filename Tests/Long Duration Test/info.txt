@@ -1,0 +1,10 @@
+Start of long duration test: 26.Nov 2021 (1637949923)
+End of long duration test: 29.Nov 2021 (1637872694) 
+
+Epoch is not correct but first and last timestamp indicate test duration
+
+Duration: 239917 s / 3998 min / 66.64 h / 2.77 days
+
+File size on server: 465.8 MiB
+
+Conculsion: Was still running in Monday after the weekend, ended when trying to open the 500MB file due to raspberry pi locking up.

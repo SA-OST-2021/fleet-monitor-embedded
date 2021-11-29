@@ -12,6 +12,7 @@ Fms::Fms(twai_message_t msg){
     last_update = xTaskGetTickCount();
 }
 
+// Returns true if data is the same
 bool Fms::compareData(const Fms& b){
     if(pgn != b.getPgn()) return false;
     for(int i = 0; i < 8; i++){

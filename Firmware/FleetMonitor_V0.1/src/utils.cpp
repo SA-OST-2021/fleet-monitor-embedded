@@ -7,6 +7,14 @@
 #include "format/ff.h"
 #include "format/diskio.h"
 
+//#include "esp32s2/rom/efuse.h"
+//#include "esp32s2/rom/secure_boot.h"
+
+#include "esp_efuse.h"
+//#include "esp_efuse_table.h"
+#include "soc/soc.h"
+#include "soc/efuse_reg.h"
+
 int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize);
 int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize);
 void msc_flush_cb(void);
@@ -17,122 +25,18 @@ Adafruit_USBD_MSC usb_msc;
 Adafruit_FlashTransport_ESP32 flashTransport;
 Adafruit_SPIFlash flash(&flashTransport);
 FatFileSystem fatfs;
+SystemParser systemParser;
 
 bool utils_init(const char* labelName, bool forceFormat) {
   USB.begin();
   USB.productName("Fleet-Monitor");
   USBSerial.begin(0);
-<<<<<<< HEAD
-  USBSerial.println("ESP32-Arduino_USB_MSC_Flash");
-
-  if (!flash.begin()) {
-    USBSerial.println("Error, failed to initialize flash chip!");
-    return 0;
+/*
+  if(!utils_updateEfuse()) {
+    USBSerial.println("Could not update Efuses");
+    return false;
   }
-
-  if (!fatfs.begin(&flash) || forceFormat)  // Check if disk must be formated
-  {
-    USBSerial.println("No FAT File system found, try to format disk...");
-    utils_format(labelName);
-  }
-
-  USBSerial.println("Adafruit TinyUSB Mass Storage External Flash example");
-  USBSerial.print("JEDEC ID: 0x");
-  USBSerial.println(flash.getJEDECID(), HEX);
-  USBSerial.print("Flash size: ");
-  USBSerial.print(flash.size() / 1024);
-  USBSerial.println(" KB");
-
-  usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
-  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
-  usb_msc.setCapacity(flash.size() / 512,
-                      512);    // Set disk size, block size should be 512 regardless of spi flash page size
-  usb_msc.setUnitReady(true);  // MSC is ready for read/write
-  usb_msc.begin();
-
-  // while(!USBSerial) yield();
-  /*
-
-   // First call begin to mount the filesystem.  Check that it returns true
-    // to make sure the filesystem was mounted.
-    if (!fatfs.begin(&flash)) {
-      USBSerial.println("Error, failed to mount newly formatted filesystem!");
-      USBSerial.println("Was the flash chip formatted with the SdFat_format example?");
-      while(1) yield();
-    }
-    USBSerial.println("Mounted filesystem!");
-
-    // Check if a directory called 'test' exists and create it if not there.
-    // Note you should _not_ add a trailing slash (like '/test/') to directory names!
-    // You can use the same exists function to check for the existance of a file too.
-    if (!fatfs.exists("/test")) {
-      USBSerial.println("Test directory not found, creating...");
-
-      // Use mkdir to create directory (note you should _not_ have a trailing slash).
-      fatfs.mkdir("/test");
-
-      if ( !fatfs.exists("/test") ) {
-        USBSerial.println("Error, failed to create directory!");
-        while(1) yield();
-      }else {
-        USBSerial.println("Created directory!");
-      }
-    }
-
-    // You can also create all the parent subdirectories automatically with mkdir.
-    // For example to create the hierarchy /test/foo/bar:
-    USBSerial.println("Creating deep folder structure...");
-    if ( !fatfs.exists("/test/foo/bar") ) {
-      USBSerial.println("Creating /test/foo/bar");
-      fatfs.mkdir("/test/foo/bar");
-
-      if ( !fatfs.exists("/test/foo/bar") ) {
-        USBSerial.println("Error, failed to create directory!");
-        while(1) yield();
-      }else {
-        USBSerial.println("Created directory!");
-      }
-    }
-
-    // This will create the hierarchy /test/foo/baz, even when /test/foo already exists:
-    if ( !fatfs.exists("/test/foo/baz") ) {
-      USBSerial.println("Creating /test/foo/baz");
-      fatfs.mkdir("/test/foo/baz");
-
-      if ( !fatfs.exists("/test/foo/baz") ) {
-        USBSerial.println("Error, failed to create directory!");
-        while(1) yield();
-      }else {
-        USBSerial.println("Created directory!");
-      }
-    }
-
-    // Create a file in the test directory and write data to it.
-    // Note the FILE_WRITE parameter which tells the library you intend to
-    // write to the file.  This will create the file if it doesn't exist,
-    // otherwise it will open the file and start appending new data to the
-    // end of it.
-    File writeFile = fatfs.open("/test/test.txt", FILE_WRITE);
-    if (!writeFile) {
-      USBSerial.println("Error, failed to open test.txt for writing!");
-      while(1) yield();
-    }
-    USBSerial.println("Opened file /test/test.txt for writing/appending...");
-
-    // Once open for writing you can print to the file as if you're printing
-    // to the serial terminal, the same functions are available.
-    writeFile.println("Hello world!");
-    writeFile.print("Hello number: "); writeFile.println(123, DEC);
-    writeFile.print("Hello hex number: 0x"); writeFile.println(123, HEX);
-
-    // Close the file when finished writing.
-    writeFile.close();
-    USBSerial.println("Wrote to file /test/test.txt!");
-=======
->>>>>>> 1f2049ec14c24592067429b9942193a0d0055b75
-
-  // TODO: Set fuse bits
-
+*/
   if (!flash.begin()) {
     USBSerial.println("Error, failed to initialize flash chip!");
     return 0;
@@ -148,6 +52,31 @@ bool utils_init(const char* labelName, bool forceFormat) {
   {
     USBSerial.println("No FAT File system found, try to format disk...");
     utils_format(labelName);
+  }
+
+  if(!utils_updateEfuse()) {
+    USBSerial.println("Could not update Efuses");
+    return false;
+  }
+
+  return true;
+}
+
+bool utils_systemConfig(const char* fileName)
+{
+  if (!systemParser.loadFile(fileName)) {
+    USBSerial.println("System config loading failed.");
+    return false;
+  }
+  USBSerial.println("System config loading was successful.");
+
+  // TODO: Update WiFi-Password if updated
+
+  if (systemParser.getBootloaderMode()) {
+    USBSerial.println("Going to reset ESP32...");
+    vTaskDelay(2500);     // Give some time to save file on flash
+    usb_persist_restart(RESTART_BOOTLOADER);
+    USBSerial.println("Should be dead now... ._.");
   }
 
   return true;
@@ -206,6 +135,40 @@ bool utils_isUpdated(bool clearFlag) {
   if (clearFlag) updated = false;
   return status;
 }
+
+bool utils_updateEfuse(void) {
+  while(!USBSerial) yield();
+
+  esp_err_t err = ESP_OK;
+  uint8_t efuseUartPrintControl, efuseUartPrintChannel;
+  //err |= esp_efuse_read_field_blob(ESP_EFUSE_UART_PRINT_CONTROL, &efuseUartPrintControl, 2);
+  //err |= esp_efuse_read_field_blob(ESP_EFUSE_UART_PRINT_CHANNEL, &efuseUartPrintChannel, 1);
+
+  //REG_WRITE(EFUSE_PGM_DATA4, 0xC4);
+
+  //uint32_t efuseUartPrintControl = (REG_READ(EFUSE_PGM_DATA4_REG) >> EFUSE_UART_PRINT_CONTROL_S) && EFUSE_UART_PRINT_CONTROL_V;  // 2
+  //uint32_t efuseUartPrintChannel = (REG_READ(EFUSE_PGM_DATA4_REG) >> EFUSE_UART_PRINT_CHANNEL_S) && EFUSE_UART_PRINT_CHANNEL_V;  // 0
+  USBSerial.println(efuseUartPrintControl);
+  USBSerial.println(efuseUartPrintChannel);
+
+  //REG_GET_FIELD(EFUSE_BLK0, EFUSE_RD_ADC_VREF);
+
+  //USBSerial.printf("EFUSE_PGM_DATA0_REG: %08X\n", REG_READ(EFUSE_PGM_DATA0_REG));
+
+  if (efuseUartPrintControl == 3 && efuseUartPrintChannel == 1) {
+    USBSerial.println("EFuse have been set correctly!");
+  }
+  else {
+    efuseUartPrintControl = 0x03;
+    efuseUartPrintChannel = 0x01;
+    //err |= esp_efuse_write_field_blob(EFUSE_UART_PRINT_CONTROL, &efuseUartPrintControl, 2);
+    //err |= esp_efuse_write_field_blob(EFUSE_UART_PRINT_CHANNEL, &efuseUartPrintChannel, 1);
+    USBSerial.println("EFuse have been burned!");
+  }
+  return (err == ESP_OK);
+}
+
+
 
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and

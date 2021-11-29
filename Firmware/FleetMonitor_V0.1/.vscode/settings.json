@@ -9,6 +9,8 @@
         "string_view": "cpp",
         "initializer_list": "cpp",
         "*.tcc": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "sdkconfig.h": "c",
+        "tusb_option.h": "c"
     }
 }

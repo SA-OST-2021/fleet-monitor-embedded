@@ -1,25 +1,28 @@
 #include "utils.h"
 #include "USB.h"
+#include "SPI.h"
+#include "SdFat.h"
 #include "Adafruit_SPIFlash.h"
 #include "Adafruit_TinyUSB.h"
 #include "format/ff.h"
 #include "format/diskio.h"
 
-extern USBCDC USBSerial;
-extern FatFileSystem fatfs;
-
-static Adafruit_USBD_MSC usb_msc;
-static Adafruit_FlashTransport_ESP32 flashTransport;
-static Adafruit_SPIFlash flash(&flashTransport);
-static int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize);
-static int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize);
-static void msc_flush_cb(void);
+int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize);
+int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize);
+void msc_flush_cb(void);
 static volatile bool updated = false;
+
+USBCDC USBSerial;
+Adafruit_USBD_MSC usb_msc;
+Adafruit_FlashTransport_ESP32 flashTransport;
+Adafruit_SPIFlash flash(&flashTransport);
+FatFileSystem fatfs;
 
 bool utils_init(const char* labelName, bool forceFormat) {
   USB.begin();
   USB.productName("Fleet-Monitor");
   USBSerial.begin(0);
+<<<<<<< HEAD
   USBSerial.println("ESP32-Arduino_USB_MSC_Flash");
 
   if (!flash.begin()) {
@@ -125,115 +128,27 @@ bool utils_init(const char* labelName, bool forceFormat) {
     // Close the file when finished writing.
     writeFile.close();
     USBSerial.println("Wrote to file /test/test.txt!");
+=======
+>>>>>>> 1f2049ec14c24592067429b9942193a0d0055b75
 
-    // Now open the same file but for reading.
-    File readFile = fatfs.open("/test/test.txt", FILE_READ);
-    if (!readFile) {
-      USBSerial.println("Error, failed to open test.txt for reading!");
-      while(1) yield();
-    }
+  // TODO: Set fuse bits
 
-    // Read data using the same read, find, readString, etc. functions as when using
-    // the serial class.  See SD library File class for more documentation:
-    //   https://www.arduino.cc/en/reference/SD
-    // Read a line of data:
-    String line = readFile.readStringUntil('\n');
-    USBSerial.print("First line of test.txt: "); USBSerial.println(line);
+  if (!flash.begin()) {
+    USBSerial.println("Error, failed to initialize flash chip!");
+    return 0;
+  }
 
-    // You can get the current position, remaining data, and total size of the file:
-    USBSerial.print("Total size of test.txt (bytes): "); USBSerial.println(readFile.size(), DEC);
-    USBSerial.print("Current position in test.txt: "); USBSerial.println(readFile.position(), DEC);
-    USBSerial.print("Available data to read in test.txt: "); USBSerial.println(readFile.available(), DEC);
+  usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
+  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
+  usb_msc.setCapacity(flash.size() / 512, 512);    // Set disk size, block size should be 512 regardless of spi flash page size
+  usb_msc.setUnitReady(true);  // MSC is ready for read/write
+  usb_msc.begin();
 
-    // And a few other interesting attributes of a file:
-    USBSerial.print("File name: "); USBSerial.println(readFile.name());
-    USBSerial.print("Is file a directory? "); USBSerial.println(readFile.isDirectory() ? "Yes" : "No");
-
-    // You can seek around inside the file relative to the start of the file.
-    // For example to skip back to the start (position 0):
-    if (!readFile.seek(0)) {
-      USBSerial.println("Error, failed to seek back to start of file!");
-      while(1) yield();
-    }
-
-    // And finally to read all the data and print it out a character at a time
-    // (stopping when end of file is reached):
-    USBSerial.println("Entire contents of test.txt:");
-    while (readFile.available()) {
-      char c = readFile.read();
-      USBSerial.print(c);
-    }
-
-    // Close the file when finished reading.
-    readFile.close();
-
-    // You can open a directory to list all the children (files and directories).
-    // Just like the SD library the File type represents either a file or directory.
-    File testDir = fatfs.open("/test");
-    if (!testDir) {
-      USBSerial.println("Error, failed to open test directory!");
-      while(1) yield();
-    }
-    if (!testDir.isDirectory()) {
-      USBSerial.println("Error, expected test to be a directory!");
-      while(1) yield();
-    }
-    USBSerial.println("Listing children of directory /test:");
-    File child = testDir.openNextFile();
-    while (child) {
-      char filename[64];
-      child.getName(filename, sizeof(filename));
-
-      // Print the file name and mention if it's a directory.
-      USBSerial.print("- "); USBSerial.print(filename);
-      if (child.isDirectory()) {
-        USBSerial.print(" (directory)");
-      }
-      USBSerial.println();
-      // Keep calling openNextFile to get a new file.
-      // When you're done enumerating files an unopened one will
-      // be returned (i.e. testing it for true/false like at the
-      // top of this while loop will fail).
-      child = testDir.openNextFile();
-    }
-
-    // If you want to list the files in the directory again call
-    // rewindDirectory().  Then openNextFile will start from the
-    // top again.
-    testDir.rewindDirectory();
-
-    // Delete a file with the remove command.  For example create a test2.txt file
-    // inside /test/foo and then delete it.
-    File test2File = fatfs.open("/test/foo/test2.txt", FILE_WRITE);
-    test2File.close();
-    USBSerial.println("Deleting /test/foo/test2.txt...");
-    if (!fatfs.remove("/test/foo/test2.txt")) {
-      USBSerial.println("Error, couldn't delete test.txt file!");
-      while(1) yield();
-    }
-    USBSerial.println("Deleted file!");
-
-    // Delete a directory with the rmdir command.  Be careful as
-    // this will delete EVERYTHING in the directory at all levels!
-    // I.e. this is like running a recursive delete, rm -rf *, in
-    // unix filesystems!
-    USBSerial.println("Deleting /test directory and everything inside it...");
-    if (!testDir.rmRfStar()) {
-      USBSerial.println("Error, couldn't delete test directory!");
-      while(1) yield();
-    }
-    // Check that test is really deleted.
-    if (fatfs.exists("/test")) {
-      USBSerial.println("Error, test directory was not deleted!");
-      while(1) yield();
-    }
-    USBSerial.println("Test directory was deleted!");
-
-    USBSerial.println("Finished!");
-
-
-
-  */
+  if (!fatfs.begin(&flash) || forceFormat)  // Check if disk must be formated
+  {
+    USBSerial.println("No FAT File system found, try to format disk...");
+    utils_format(labelName);
+  }
 
   return true;
 }
@@ -295,20 +210,20 @@ bool utils_isUpdated(bool clearFlag) {
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and
 // return number of copied bytes (must be multiple of block size)
-static int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize) {
+int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize) {
   return flash.readBlocks(lba, (uint8_t*)buffer, bufsize / 512) ? bufsize : -1;
 }
 
 // Callback invoked when received WRITE10 command.
 // Process data in buffer to disk's storage and
 // return number of written bytes (must be multiple of block size)
-static int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize) {
+int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize) {
   return flash.writeBlocks(lba, buffer, bufsize / 512) ? bufsize : -1;
 }
 
 // Callback invoked when WRITE10 command is completed (status received and accepted by host). Used to flush any pending
 // cache.
-static void msc_flush_cb(void) {
+void msc_flush_cb(void) {
   flash.syncBlocks();  // sync with flash
   fatfs.cacheClear();  // clear file system's cache to force refresh
   updated = true;

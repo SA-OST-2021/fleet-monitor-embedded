@@ -45,7 +45,6 @@
 typedef int oflag_t;
 #else  // USE_FCNTL_H
 
-// Removed warnings by Florian Baumgartner
 #undef O_RDONLY
 #undef O_WRONLY
 #undef O_RDWR
@@ -55,6 +54,7 @@ typedef int oflag_t;
 #undef O_TRUNC
 #undef O_EXCL
 #undef O_SYNC
+#undef O_ACCMODE
 
 #define O_RDONLY  0X00  ///< Open for reading only.
 #define O_WRONLY  0X01  ///< Open for writing only.

@@ -26,7 +26,7 @@
 
 #pragma once
 #include "tusb_option.h"
-#include "../../sdkconfig.h"
+#include <sdkconfig.h>
 
 #ifdef __cplusplus
 extern "C" {

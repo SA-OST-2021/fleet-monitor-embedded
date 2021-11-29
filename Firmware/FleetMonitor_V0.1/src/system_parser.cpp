@@ -2,19 +2,11 @@
 #include "utils.h"
 #include "USB.h"
 
-extern USBCDC USBSerial;
-extern FatFileSystem fatfs;
-
 SystemParser::SystemParser(void) {}
 
 bool SystemParser::loadFile(const char* path) {
   filePath = path;
-
-  File file = fatfs.open(filePath, (oflag_t)FILE_WRITE);
-  file.println("Hello World!");
-  file.close();
-
-  file = fatfs.open(filePath);
+  File file = fatfs.open(filePath);
 
   if (!file) {
     USBSerial.println("open file failed");
@@ -41,6 +33,7 @@ const char* SystemParser::getSsid(void) {
 
 const char* SystemParser::getPassword(void) {
   if (doc.containsKey("password")) {
+    // TODO: Save password to EEPROM and replace characters in file with ******
     return doc["password"].as<const char*>();
   }
   return "";
@@ -81,11 +74,9 @@ bool SystemParser::getBootloaderMode(bool clearFlag) {
   bool bootloader = false;
   if (doc.containsKey("bootloader")) {
     bootloader = doc["bootloader"].as<bool>();
-    USBSerial.printf("check flag: %d\n", clearFlag);
     if (clearFlag) {
       doc["bootloader"] = false;
-      USBSerial.println("Going to save file");
-      saveFile("test.json");
+      saveFile();
     }
   }
   return bootloader;
@@ -95,18 +86,16 @@ bool SystemParser::saveFile(const char* path) {
   if (path != NULL) {
     filePath = path;
   }
-  File file = fatfs.open(filePath, (oflag_t)FILE_WRITE);
+  File file = fatfs.open(filePath, FILE_WRITE);
   if (!file) {
     USBSerial.println("open file failed");
     return false;
   }
-  USBSerial.println("File opened");
   if (serializeJson(doc, file) == 0) {
     file.close();
     USBSerial.println("Failed to write to file");
     return false;
   }
-  USBSerial.println("close file");
   file.close();
   return true;
 }

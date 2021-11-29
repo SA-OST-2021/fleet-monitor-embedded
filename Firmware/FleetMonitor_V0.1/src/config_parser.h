@@ -11,8 +11,7 @@ class ConfigParser {
  public:
   ConfigParser(void);
   bool loadFile(const char* path);
-  bool loadString(Client& client, bool saveFile = true);
-  bool saveFile(const char* path, const String& data);
+  bool loadString(Client& client, bool save = true);
   const char* getName(uint16_t pgn);
   FilterType getFilter(uint16_t pgn);
   int32_t getInterval(uint16_t pgn);
@@ -22,4 +21,6 @@ class ConfigParser {
  private:
   StaticJsonDocument<MAX_CONFIG_FILE_SIZE> doc;
   const char* filePath;
+
+  bool saveFile(const char* path = NULL);
 };

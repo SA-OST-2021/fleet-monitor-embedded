@@ -2,9 +2,6 @@
 #include "utils.h"
 #include "USB.h"
 
-extern USBCDC USBSerial;
-extern FatFileSystem fatfs;
-
 ConfigParser::ConfigParser(void) {}
 
 bool ConfigParser::loadFile(const char* path) {
@@ -27,16 +24,18 @@ bool ConfigParser::loadFile(const char* path) {
   return true;
 }
 
-bool ConfigParser::loadString(Client& client, bool saveFile) {
+bool ConfigParser::loadString(Client& client, bool save) {
   DeserializationError error = deserializeJson(doc, client);
   if (error) {
     USBSerial.printf("Failed to read file, using default configuration: %d\n", error);
     return false;
   }
+  if(save) {
+    USBSerial.println("Overwrite local config file");
+    return saveFile();
+  }
   return true;
 }
-
-bool ConfigParser::saveFile(const char* path, const String& data) { return true; }
 
 const char* ConfigParser::getName(uint16_t pgn) {
   char pgnStr[5];
@@ -95,4 +94,22 @@ bool ConfigParser::sendFrameName(void) {
     return doc["framename"].as<bool>();
   }
   return false;
+}
+
+bool ConfigParser::saveFile(const char* path) {
+  if (path != NULL) {
+    filePath = path;
+  }
+  File file = fatfs.open(filePath, FILE_WRITE);
+  if (!file) {
+    USBSerial.println("open file failed");
+    return false;
+  }
+  if (serializeJson(doc, file) == 0) {
+    file.close();
+    USBSerial.println("Failed to write to file");
+    return false;
+  }
+  file.close();
+  return true;
 }

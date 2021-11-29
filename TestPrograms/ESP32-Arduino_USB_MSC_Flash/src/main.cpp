@@ -104,6 +104,181 @@ void setup()
   usb_msc.begin();
 
   fs_changed = true;
+
+
+  while(!USBSerial) yield();
+
+  // Check if a directory called 'test' exists and create it if not there.
+  // Note you should _not_ add a trailing slash (like '/test/') to directory names!
+  // You can use the same exists function to check for the existance of a file too.
+  if (!fatfs.exists("/test")) {
+    USBSerial.println("Test directory not found, creating...");
+
+    // Use mkdir to create directory (note you should _not_ have a trailing slash).
+    fatfs.mkdir("/test");
+
+    if ( !fatfs.exists("/test") ) {
+      USBSerial.println("Error, failed to create directory!");
+      while(1) yield();
+    }else {
+      USBSerial.println("Created directory!");
+    }
+  }
+
+  // You can also create all the parent subdirectories automatically with mkdir.
+  // For example to create the hierarchy /test/foo/bar:
+  USBSerial.println("Creating deep folder structure...");
+  if ( !fatfs.exists("/test/foo/bar") ) {
+    USBSerial.println("Creating /test/foo/bar");
+    fatfs.mkdir("/test/foo/bar");
+
+    if ( !fatfs.exists("/test/foo/bar") ) {
+      USBSerial.println("Error, failed to create directory!");
+      while(1) yield();
+    }else {
+      USBSerial.println("Created directory!");
+    }
+  }
+
+  // This will create the hierarchy /test/foo/baz, even when /test/foo already exists:
+  if ( !fatfs.exists("/test/foo/baz") ) {
+    USBSerial.println("Creating /test/foo/baz");
+    fatfs.mkdir("/test/foo/baz");
+
+    if ( !fatfs.exists("/test/foo/baz") ) {
+      USBSerial.println("Error, failed to create directory!");
+      while(1) yield();
+    }else {
+      USBSerial.println("Created directory!");
+    }
+  }
+
+  // Create a file in the test directory and write data to it.
+  // Note the FILE_WRITE parameter which tells the library you intend to
+  // write to the file.  This will create the file if it doesn't exist,
+  // otherwise it will open the file and start appending new data to the
+  // end of it.
+  File writeFile = fatfs.open("/test/test.txt", FILE_WRITE);
+  if (!writeFile) {
+    USBSerial.println("Error, failed to open test.txt for writing!");
+    while(1) yield();
+  }
+  USBSerial.println("Opened file /test/test.txt for writing/appending...");
+
+  // Once open for writing you can print to the file as if you're printing
+  // to the serial terminal, the same functions are available.
+  writeFile.println("Florian Baumgartner");
+  writeFile.print("Hello number: "); writeFile.println(123456, DEC);
+  writeFile.print("Hello hex number: 0x"); writeFile.println(123456, HEX);
+
+  // Close the file when finished writing.
+  writeFile.close();
+  USBSerial.println("Wrote to file /test/test.txt!");
+
+  // Now open the same file but for reading.
+  File readFile = fatfs.open("/test/test.txt", FILE_READ);
+  if (!readFile) {
+    USBSerial.println("Error, failed to open test.txt for reading!");
+    while(1) yield();
+  }
+
+  // Read data using the same read, find, readString, etc. functions as when using
+  // the serial class.  See SD library File class for more documentation:
+  //   https://www.arduino.cc/en/reference/SD
+  // Read a line of data:
+  String line = readFile.readStringUntil('\n');
+  USBSerial.print("First line of test.txt: "); USBSerial.println(line);
+
+  // You can get the current position, remaining data, and total size of the file:
+  USBSerial.print("Total size of test.txt (bytes): "); USBSerial.println(readFile.size(), DEC);
+  USBSerial.print("Current position in test.txt: "); USBSerial.println(readFile.position(), DEC);
+  USBSerial.print("Available data to read in test.txt: "); USBSerial.println(readFile.available(), DEC);
+
+  // And a few other interesting attributes of a file:
+  USBSerial.print("File name: "); USBSerial.println(readFile.name());
+  USBSerial.print("Is file a directory? "); USBSerial.println(readFile.isDirectory() ? "Yes" : "No");
+
+  // You can seek around inside the file relative to the start of the file.
+  // For example to skip back to the start (position 0):
+  if (!readFile.seek(0)) {
+    USBSerial.println("Error, failed to seek back to start of file!");
+    while(1) yield();
+  }
+
+  // And finally to read all the data and print it out a character at a time
+  // (stopping when end of file is reached):
+  USBSerial.println("Entire contents of test.txt:");
+  while (readFile.available()) {
+    char c = readFile.read();
+    USBSerial.print(c);
+  }
+
+  // Close the file when finished reading.
+  readFile.close();
+
+  // You can open a directory to list all the children (files and directories).
+  // Just like the SD library the File type represents either a file or directory.
+  File testDir = fatfs.open("/test");
+  if (!testDir) {
+    USBSerial.println("Error, failed to open test directory!");
+    while(1) yield();
+  }
+  if (!testDir.isDirectory()) {
+    USBSerial.println("Error, expected test to be a directory!");
+    while(1) yield();
+  }
+  USBSerial.println("Listing children of directory /test:");
+  File child = testDir.openNextFile();
+  while (child) {
+    char filename[64];
+    child.getName(filename, sizeof(filename));
+
+    // Print the file name and mention if it's a directory.
+    USBSerial.print("- "); USBSerial.print(filename);
+    if (child.isDirectory()) {
+      USBSerial.print(" (directory)");
+    }
+    USBSerial.println();
+    // Keep calling openNextFile to get a new file.
+    // When you're done enumerating files an unopened one will
+    // be returned (i.e. testing it for true/false like at the
+    // top of this while loop will fail).
+    child = testDir.openNextFile();
+  }
+
+  // If you want to list the files in the directory again call
+  // rewindDirectory().  Then openNextFile will start from the
+  // top again.
+  testDir.rewindDirectory();
+
+  // Delete a file with the remove command.  For example create a test2.txt file
+  // inside /test/foo and then delete it.
+  File test2File = fatfs.open("/test/foo/test2.txt", FILE_WRITE);
+  test2File.close();
+  USBSerial.println("Deleting /test/foo/test2.txt...");
+  if (!fatfs.remove("/test/foo/test2.txt")) {
+    USBSerial.println("Error, couldn't delete test.txt file!");
+    while(1) yield();
+  }
+  USBSerial.println("Deleted file!");
+
+  // Delete a directory with the rmdir command.  Be careful as
+  // this will delete EVERYTHING in the directory at all levels!
+  // I.e. this is like running a recursive delete, rm -rf *, in
+  // unix filesystems!
+  USBSerial.println("Deleting /test directory and everything inside it...");
+  if (!testDir.rmRfStar()) {
+    USBSerial.println("Error, couldn't delete test directory!");
+    while(1) yield();
+  }
+  // Check that test is really deleted.
+  if (fatfs.exists("/test")) {
+    USBSerial.println("Error, test directory was not deleted!");
+    while(1) yield();
+  }
+  USBSerial.println("Test directory was deleted!");
+
+  USBSerial.println("Finished!");
 }
 
 void loop()

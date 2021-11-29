@@ -1,6 +1,7 @@
 #include "system_parser.h"
 #include "utils.h"
 #include "USB.h"
+#include "EEPROM.h"
 
 SystemParser::SystemParser(void) {}
 

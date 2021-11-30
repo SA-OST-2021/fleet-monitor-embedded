@@ -79,13 +79,13 @@ void hmi_setLed(const led_t led)
 
 static void setLedColor(led_type_e type, led_color_e color) {
   if(type == LED_STATUS) {
-    digitalWrite(STATUS_LED_RED, color == RED || color == YELLOW || color == MAGENTA || color == WHITE);
-    digitalWrite(STATUS_LED_GREEN, color == GREEN || color == YELLOW || color == CYAN || color == WHITE);
-    digitalWrite(STATUS_LED_BLUE, color == BLUE || color == MAGENTA || color == CYAN || color == WHITE);
+    digitalWrite(STATUS_LED_RED, !(color == RED || color == YELLOW || color == MAGENTA || color == WHITE));
+    digitalWrite(STATUS_LED_GREEN, !(color == GREEN || color == YELLOW || color == CYAN || color == WHITE));
+    digitalWrite(STATUS_LED_BLUE, !(color == BLUE || color == MAGENTA || color == CYAN || color == WHITE));
   }
   if(type == LED_CAN) {
-    digitalWrite(CAN_LED_RED, color == RED || color == YELLOW || color == MAGENTA || color == WHITE);
-    digitalWrite(CAN_LED_GREEN, color == GREEN || color == YELLOW || color == CYAN || color == WHITE);
-    digitalWrite(CAN_LED_BLUE, color == BLUE || color == MAGENTA || color == CYAN || color == WHITE);
+    digitalWrite(CAN_LED_RED, !(color == RED || color == YELLOW || color == MAGENTA || color == WHITE));
+    digitalWrite(CAN_LED_GREEN, !(color == GREEN || color == YELLOW || color == CYAN || color == WHITE));
+    digitalWrite(CAN_LED_BLUE, !(color == BLUE || color == MAGENTA || color == CYAN || color == WHITE));
   }
 }

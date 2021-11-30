@@ -4,21 +4,22 @@
 #include "SdFat.h"
 #include "Adafruit_SPIFlash.h"
 #include "Adafruit_TinyUSB.h"
+#include "EEPROM.h"
 #include "format/ff.h"
 #include "format/diskio.h"
 
-//#include "esp32s2/rom/efuse.h"
-//#include "esp32s2/rom/secure_boot.h"
-
-#include "esp_efuse.h"
+//#include "esp_efuse.h"
 //#include "esp_efuse_table.h"
-#include "soc/soc.h"
-#include "soc/efuse_reg.h"
+//#include "soc/soc.h"
+//#include "soc/efuse_reg.h"
 
-int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize);
-int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize);
-void msc_flush_cb(void);
+#define EEPROM_SIZE 64
+
+static int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize);
+static int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize);
+static void msc_flush_cb(void);
 static volatile bool updated = false;
+static Settings settings;
 
 USBCDC USBSerial;
 Adafruit_USBD_MSC usb_msc;
@@ -31,12 +32,13 @@ bool utils_init(const char* labelName, bool forceFormat) {
   USB.begin();
   USB.productName("Fleet-Monitor");
   USBSerial.begin(0);
-/*
-  if(!utils_updateEfuse()) {
-    USBSerial.println("Could not update Efuses");
-    return false;
+
+  if (!EEPROM.begin(EEPROM_SIZE))
+  {
+    USBSerial.println("failed to initialise EEPROM");
+    return 0;
   }
-*/
+
   if (!flash.begin()) {
     USBSerial.println("Error, failed to initialize flash chip!");
     return 0;
@@ -168,25 +170,27 @@ bool utils_updateEfuse(void) {
   return (err == ESP_OK);
 }
 
-
+Settings& utils_getSettings(void) {
+  return settings;
+}
 
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and
 // return number of copied bytes (must be multiple of block size)
-int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize) {
+static int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize) {
   return flash.readBlocks(lba, (uint8_t*)buffer, bufsize / 512) ? bufsize : -1;
 }
 
 // Callback invoked when received WRITE10 command.
 // Process data in buffer to disk's storage and
 // return number of written bytes (must be multiple of block size)
-int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize) {
+static int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize) {
   return flash.writeBlocks(lba, buffer, bufsize / 512) ? bufsize : -1;
 }
 
 // Callback invoked when WRITE10 command is completed (status received and accepted by host). Used to flush any pending
 // cache.
-void msc_flush_cb(void) {
+static void msc_flush_cb(void) {
   flash.syncBlocks();  // sync with flash
   fatfs.cacheClear();  // clear file system's cache to force refresh
   updated = true;

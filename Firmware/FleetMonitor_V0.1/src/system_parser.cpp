@@ -31,10 +31,14 @@ const char* SystemParser::getSsid(void) {
   return "";
 }
 
-const char* SystemParser::getPassword(void) {
+const char* SystemParser::getPassword(bool clearEntry) {
   if (doc.containsKey("password")) {
-    // TODO: Save password to EEPROM and replace characters in file with ******
-    return doc["password"].as<const char*>();
+    const char* password = doc["password"].as<const char*>();
+    if(clearEntry) {
+      doc["password"] = "";
+      saveFile();
+    }
+    return password;
   }
   return "";
 }

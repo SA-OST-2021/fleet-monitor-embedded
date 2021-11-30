@@ -1,7 +1,6 @@
 #include "system_parser.h"
 #include "utils.h"
 #include "USB.h"
-#include "EEPROM.h"
 
 SystemParser::SystemParser(void) {}
 
@@ -32,10 +31,14 @@ const char* SystemParser::getSsid(void) {
   return "";
 }
 
-const char* SystemParser::getPassword(void) {
+const char* SystemParser::getPassword(bool clearEntry) {
   if (doc.containsKey("password")) {
-    // TODO: Save password to EEPROM and replace characters in file with ******
-    return doc["password"].as<const char*>();
+    const char* password = doc["password"].as<const char*>();
+    if (clearEntry) {
+      doc["password"] = "";
+      saveFile();
+    }
+    return password;
   }
   return "";
 }
@@ -86,6 +89,12 @@ bool SystemParser::getBootloaderMode(bool clearFlag) {
 bool SystemParser::saveFile(const char* path) {
   if (path != NULL) {
     filePath = path;
+  }
+  if (fatfs.exists(filePath)) {
+    if (!fatfs.remove(filePath)) {
+      USBSerial.println("Could not remove file");
+      return false;
+    }
   }
   File file = fatfs.open(filePath, FILE_WRITE);
   if (!file) {

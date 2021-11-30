@@ -13,7 +13,7 @@ class SystemParser {
   SystemParser(void);
   bool loadFile(const char* path);
   const char* getSsid(void);
-  const char* getPassword(void);
+  const char* getPassword(bool clearEntry = true);
   const char* getHostIp(void);
   int16_t getHostPort(void);
   ConnectionType getConnectionType(void);

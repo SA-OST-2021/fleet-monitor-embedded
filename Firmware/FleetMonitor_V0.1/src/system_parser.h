@@ -18,6 +18,7 @@ class SystemParser {
   int16_t getHostPort(void);
   ConnectionType getConnectionType(void);
   ConfigMode getConfigMode(void);
+  // TODO: Add overwriteLocalFile
   bool getBootloaderMode(bool clearFlag = true);
 
  private:

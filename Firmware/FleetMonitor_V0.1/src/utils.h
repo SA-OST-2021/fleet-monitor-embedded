@@ -26,3 +26,4 @@ bool utils_format(const char* labelName);
 bool utils_isUpdated(bool clearFlag = true);
 bool utils_updateEfuse(void);
 Settings& utils_getSettings(void);
+String& utils_getServerAddress(void);

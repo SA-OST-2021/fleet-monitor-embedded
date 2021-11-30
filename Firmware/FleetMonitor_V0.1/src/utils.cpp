@@ -195,6 +195,15 @@ bool utils_updateEfuse(void) {
 
 Settings& utils_getSettings(void) { return settings; }
 
+String& utils_getServerAddress(void)
+{
+  static String address = "http://" + String(settings.hostIp);
+  if(settings.hostPort != 80) {
+    address += ":" + String(settings.hostPort);
+  }
+  return address;
+}
+
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and
 // return number of copied bytes (must be multiple of block size)

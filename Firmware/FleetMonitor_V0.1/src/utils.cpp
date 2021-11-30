@@ -8,12 +8,15 @@
 #include "format/ff.h"
 #include "format/diskio.h"
 
-//#include "esp_efuse.h"
-//#include "esp_efuse_table.h"
+#include "esp_efuse.h"
+#include "esp_efuse_table.h"
 //#include "soc/soc.h"
 //#include "soc/efuse_reg.h"
 
-#define EEPROM_SIZE 64
+#define EEPROM_SIZE             64
+#define EEPROM_ADDR_STATUS      0x00
+#define EEPROM_ADDR_PASSWORD    0x01
+#define EEPROM_STATUS_MAGIC     0xA5
 
 static int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize);
 static int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize);
@@ -72,7 +75,37 @@ bool utils_systemConfig(const char* fileName)
   }
   USBSerial.println("System config loading was successful.");
 
-  // TODO: Update WiFi-Password if updated
+  settings.ssid = systemParser.getSsid();
+  settings.hostIp = systemParser.getHostIp();
+  settings.hostPort = systemParser.getHostPort();
+  settings.configMode = systemParser.getConfigMode();
+  settings.connectionType = systemParser.getConnectionType();
+  const char* password = systemParser.getPassword();
+  if(password) {
+    settings.password = password;
+    USBSerial.printf("New Password has been set, now store in EEPROM: %s\n", settings.password);
+    for(int i = 0; i < EEPROM_SIZE - EEPROM_ADDR_PASSWORD; i++) {
+      EEPROM.write(EEPROM_ADDR_PASSWORD + i, settings.password[i]);
+      if(i >= strlen(settings.password)) break;    // Copy Null-Terminator aswell
+    }
+    EEPROM.write(EEPROM_ADDR_STATUS, EEPROM_STATUS_MAGIC);
+    EEPROM.commit();
+  }
+  else {
+    if(EEPROM.read(EEPROM_ADDR_STATUS) == EEPROM_STATUS_MAGIC) {
+      USBSerial.println("EEPROM is valid");
+      static char localPassword [EEPROM_SIZE - EEPROM_ADDR_PASSWORD];
+      for(int i = 0; i < EEPROM_SIZE - EEPROM_ADDR_PASSWORD; i++) {
+        localPassword[i] = EEPROM.read(EEPROM_ADDR_PASSWORD + i);
+        if(i >= strlen(settings.password)) break;    // Copy Null-Terminator aswell
+      }
+      settings.password = (const char*) localPassword;
+      USBSerial.printf("Password has been loaded from EEPROM: %s\n", settings.password);
+    } else {
+      USBSerial.println("EEPROM is invalid");
+      settings.password = "";
+    }
+  }
 
   if (systemParser.getBootloaderMode()) {
     USBSerial.println("Going to reset ESP32...");

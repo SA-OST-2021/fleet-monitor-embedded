@@ -187,6 +187,6 @@ bool get_file_from_server(file_type_t file_type) {
   USBSerial.print("Status code: ");
   USBSerial.println(statusCode);
   // client.getStream()
-  return config.loadString(client.getStream(), true);
+  return config.loadString(client.getStream(), false);
   // USBSerial.println(client.getString());
 }

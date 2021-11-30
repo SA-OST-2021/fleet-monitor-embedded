@@ -22,114 +22,6 @@ bool utils_init(const char* labelName, bool forceFormat) {
   USB.begin();
   USB.productName("Fleet-Monitor");
   USBSerial.begin(0);
-<<<<<<< HEAD
-  USBSerial.println("ESP32-Arduino_USB_MSC_Flash");
-
-  if (!flash.begin()) {
-    USBSerial.println("Error, failed to initialize flash chip!");
-    return 0;
-  }
-
-  if (!fatfs.begin(&flash) || forceFormat)  // Check if disk must be formated
-  {
-    USBSerial.println("No FAT File system found, try to format disk...");
-    utils_format(labelName);
-  }
-
-  USBSerial.println("Adafruit TinyUSB Mass Storage External Flash example");
-  USBSerial.print("JEDEC ID: 0x");
-  USBSerial.println(flash.getJEDECID(), HEX);
-  USBSerial.print("Flash size: ");
-  USBSerial.print(flash.size() / 1024);
-  USBSerial.println(" KB");
-
-  usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
-  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
-  usb_msc.setCapacity(flash.size() / 512,
-                      512);    // Set disk size, block size should be 512 regardless of spi flash page size
-  usb_msc.setUnitReady(true);  // MSC is ready for read/write
-  usb_msc.begin();
-
-  // while(!USBSerial) yield();
-  /*
-
-   // First call begin to mount the filesystem.  Check that it returns true
-    // to make sure the filesystem was mounted.
-    if (!fatfs.begin(&flash)) {
-      USBSerial.println("Error, failed to mount newly formatted filesystem!");
-      USBSerial.println("Was the flash chip formatted with the SdFat_format example?");
-      while(1) yield();
-    }
-    USBSerial.println("Mounted filesystem!");
-
-    // Check if a directory called 'test' exists and create it if not there.
-    // Note you should _not_ add a trailing slash (like '/test/') to directory names!
-    // You can use the same exists function to check for the existance of a file too.
-    if (!fatfs.exists("/test")) {
-      USBSerial.println("Test directory not found, creating...");
-
-      // Use mkdir to create directory (note you should _not_ have a trailing slash).
-      fatfs.mkdir("/test");
-
-      if ( !fatfs.exists("/test") ) {
-        USBSerial.println("Error, failed to create directory!");
-        while(1) yield();
-      }else {
-        USBSerial.println("Created directory!");
-      }
-    }
-
-    // You can also create all the parent subdirectories automatically with mkdir.
-    // For example to create the hierarchy /test/foo/bar:
-    USBSerial.println("Creating deep folder structure...");
-    if ( !fatfs.exists("/test/foo/bar") ) {
-      USBSerial.println("Creating /test/foo/bar");
-      fatfs.mkdir("/test/foo/bar");
-
-      if ( !fatfs.exists("/test/foo/bar") ) {
-        USBSerial.println("Error, failed to create directory!");
-        while(1) yield();
-      }else {
-        USBSerial.println("Created directory!");
-      }
-    }
-
-    // This will create the hierarchy /test/foo/baz, even when /test/foo already exists:
-    if ( !fatfs.exists("/test/foo/baz") ) {
-      USBSerial.println("Creating /test/foo/baz");
-      fatfs.mkdir("/test/foo/baz");
-
-      if ( !fatfs.exists("/test/foo/baz") ) {
-        USBSerial.println("Error, failed to create directory!");
-        while(1) yield();
-      }else {
-        USBSerial.println("Created directory!");
-      }
-    }
-
-    // Create a file in the test directory and write data to it.
-    // Note the FILE_WRITE parameter which tells the library you intend to
-    // write to the file.  This will create the file if it doesn't exist,
-    // otherwise it will open the file and start appending new data to the
-    // end of it.
-    File writeFile = fatfs.open("/test/test.txt", FILE_WRITE);
-    if (!writeFile) {
-      USBSerial.println("Error, failed to open test.txt for writing!");
-      while(1) yield();
-    }
-    USBSerial.println("Opened file /test/test.txt for writing/appending...");
-
-    // Once open for writing you can print to the file as if you're printing
-    // to the serial terminal, the same functions are available.
-    writeFile.println("Hello world!");
-    writeFile.print("Hello number: "); writeFile.println(123, DEC);
-    writeFile.print("Hello hex number: 0x"); writeFile.println(123, HEX);
-
-    // Close the file when finished writing.
-    writeFile.close();
-    USBSerial.println("Wrote to file /test/test.txt!");
-=======
->>>>>>> 1f2049ec14c24592067429b9942193a0d0055b75
 
   // TODO: Set fuse bits
 
@@ -140,7 +32,8 @@ bool utils_init(const char* labelName, bool forceFormat) {
 
   usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
   usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
-  usb_msc.setCapacity(flash.size() / 512, 512);    // Set disk size, block size should be 512 regardless of spi flash page size
+  usb_msc.setCapacity(flash.size() / 512,
+                      512);    // Set disk size, block size should be 512 regardless of spi flash page size
   usb_msc.setUnitReady(true);  // MSC is ready for read/write
   usb_msc.begin();
 

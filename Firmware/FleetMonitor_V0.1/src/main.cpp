@@ -8,6 +8,7 @@
 #include "task_can.h"
 #include "task_frame_handler.h"
 #include "task_networking.h"
+#include "task_accel.h"
 #include "utils.h"
 
 SystemParser systemParser;  // TODO: Move to better place?
@@ -31,19 +32,6 @@ void setup() {
   }
   USBSerial.println("Config loading was successful.");
 
-  /*
-  USBSerial.println("\n");
-  USBSerial.printf("getName(FEEE): %s\n", configParser.getName(0xFEEE));
-  USBSerial.printf("getFilter(FEAE): %d\n", configParser.getFilter(0xFEAE));
-  USBSerial.printf("getFilter(FD09): %d\n", configParser.getFilter(0xFD09));
-  USBSerial.printf("getFilter(FE56): %d\n", configParser.getFilter(0xFE56));
-  USBSerial.printf("getInterval(FEE5): %d\n", configParser.getInterval(0xFEE5));
-  USBSerial.printf("getInterval(FEF5): %d\n", configParser.getInterval(0xFEF5));
-  USBSerial.printf("isEnabled(FE6B): %d\n", configParser.isEnabled(0xFE6B));
-  USBSerial.printf("isEnabled(FEF2): %d\n", configParser.isEnabled(0xFEF2));
-  USBSerial.println("\n");
-  */
-
   USBSerial.println("\n");
   USBSerial.printf("getSsid(): %s\n", systemParser.getSsid());
   USBSerial.printf("getPassword(): %s\n", systemParser.getPassword());
@@ -58,11 +46,15 @@ void setup() {
   USBSerial.println("\n");
 
   xTaskCreate(task_hmi, "task_hmi", 1024, NULL, 1, NULL);
-  xTaskCreate(task_networking, "task_networking", 14096, NULL, 1, NULL);
+  xTaskCreate(task_accel, "task_accel", 2048, NULL, 1, NULL);
+  xTaskCreate(task_networking, "task_networking", 32096, NULL, 1, NULL);
   xTaskCreate(task_can, "task_can", 14096, NULL, 1, NULL);
   xTaskCreate(task_frame_handler, "task_frame_handler", 64096, NULL, 3, NULL);
 
   USBSerial.println("Task Initialization Done");
+  vTaskDelay(100);
+  USBSerial.println();
+  vTaskDelay(100);
 }
 
 void loop() {}

@@ -6,11 +6,14 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "utils.h"
 #include <Ethernet.h>
 #include <USB.h>
 #include <WiFi.h>
 #include <WiFiAP.h>
 #include <WiFiClient.h>
+
+#include "utils.h"
 
 EthernetClient ethclient;
 WiFiClient wificlient;
@@ -25,7 +28,7 @@ byte mac[] = {0x2C, 0xF7, 0xF1, 0x08, 0x39, 0x7E};
 
 HTTPClient client;
 
-ConfigParser config;
+ConfigParser config("config.json");
 
 // Wifi Definitions
 char ssid[] = "fleet-monitor";  //  your network SSID (name)
@@ -37,17 +40,11 @@ bool network_connected = false;
 
 bool config_loaded = false;
 
-typedef enum {
-  FILE_UNDEFINED,
-  FILE_CONFIG,
-  FILE_SYSTEM,
-} file_type_t;
-
 void check_connection_status();
 void eth_init();
 void wifi_init();
 
-bool get_file_from_server(file_type_t file_type);
+bool get_config_from_server();
 
 void task_networking(void *pvParameter) {
   eth_init();
@@ -58,16 +55,24 @@ void task_networking(void *pvParameter) {
   TickType_t config_load_timeout = xTaskGetTickCount();
   while (1) {
     check_connection_status();
-
-    if (network_connected && !config_loaded) {
-      if (config_load_timeout + CONFIG_LOAD_TIMEOUT < xTaskGetTickCount()) {
-        USBSerial.println("Loading config from server");
-        if (get_file_from_server(FILE_CONFIG)) {
-          USBSerial.println("Config loading successful!");
-          config_loaded = true;
-        } else {
-          USBSerial.println("Config loading failed, trying again..");
-          config_load_timeout = xTaskGetTickCount();
+    if (utils_getSettings().configMode == LOCAL && !config_loaded) {
+      if (!config.loadFile("config.json")) {
+        USBSerial.println("Config loading failed.");
+      } else {
+        USBSerial.println("Config loading was successful.");
+        config_loaded = true;
+      }
+    } else {
+      if (network_connected && !config_loaded) {
+        if (config_load_timeout + CONFIG_LOAD_TIMEOUT < xTaskGetTickCount()) {
+          USBSerial.println("Loading config from server");
+          if (get_config_from_server()) {
+            USBSerial.println("Config loading successful!");
+            config_loaded = true;
+          } else {
+            USBSerial.println("Config loading failed, trying again..");
+            config_load_timeout = xTaskGetTickCount();
+          }
         }
       }
     }
@@ -81,7 +86,7 @@ void eth_init() {
   Ethernet.begin(mac, 1000, 1000);
 }
 
-void wifi_init() { WiFi.begin(ssid, pass); }
+void wifi_init() { WiFi.begin(utils_getSettings().ssid, utils_getSettings().password); }
 
 void check_connection_status() {
   static EthernetHardwareStatus eth_harware_status = EthernetNoHardware;
@@ -92,6 +97,8 @@ void check_connection_status() {
   static IPAddress wifi_ip(0, 0, 0, 0);
 
   static TickType_t wifi_disconnect_time = xTaskGetTickCount();
+
+  static bool ethernet_already_connected = false;
 
   /** Ethernet stuff **/
   IPAddress no_ip(0, 0, 0, 0);
@@ -166,27 +173,25 @@ void check_connection_status() {
 
   wifi_connected = ((WiFi.localIP() != no_ip) && (WiFi.status() == WL_CONNECTED));
 
-  if (ethernet_connected && !network_connected)
+  // Prioritize Ethernet over WIFI
+  if (ethernet_connected && !ethernet_already_connected) {
+    ethernet_already_connected = true;
     client.begin(ethclient, "http://");
-  else if (wifi_connected && !network_connected)
+  } else if (wifi_connected && !network_connected)
     client.begin(ethclient, "http://");  // TODO change to wifi / add port
 
   network_connected = wifi_connected | ethernet_connected;
+  if (network_connected == false) ethernet_already_connected = false;
 }
 
-bool get_file_from_server(file_type_t file_type) {
-  if (file_type == FILE_CONFIG) {
-    client.setURL("http://10.3.141.1:8080/config.json");
-  } else if (file_type == FILE_SYSTEM) {
-    client.setURL("http://10.3.141.1:8080/system.json");
-  } else {
-    return false;
-  }
+bool get_config_from_server() {
+  client.setURL(utils_getServerAddress() + "/config.json");
+
   int statusCode = client.GET();
   if (statusCode != 200) return false;
   USBSerial.print("Status code: ");
   USBSerial.println(statusCode);
   // client.getStream()
-  return config.loadString(client.getStream(), false);
+  return config.loadString(client.getStream());
   // USBSerial.println(client.getString());
 }

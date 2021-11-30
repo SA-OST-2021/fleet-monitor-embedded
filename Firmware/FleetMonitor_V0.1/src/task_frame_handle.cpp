@@ -7,6 +7,7 @@
 #include <USB.h>
 
 #include "Fms.h"
+#include "utils.h"
 
 #include "task_can.h"
 #include "task_frame_handler.h"
@@ -23,8 +24,6 @@ ESP32Time rtc;
 #define CONFIG_LOAD_MAX_RETRIES 5
 
 DynamicJsonDocument doc(DOCUMENT_SIZE);
-
-String server = "http://10.3.141.1:8080";
 
 bool send_data_to_client();
 
@@ -69,7 +68,7 @@ bool send_data_to_client() {
   String postData;
   DynamicJsonDocument response(256);
   serializeJson(doc, postData);
-  client.setURL(server);
+  client.setURL(utils_getServerAddress());
   status = client.POST(postData);
 
   USBSerial.print("Response Code: ");

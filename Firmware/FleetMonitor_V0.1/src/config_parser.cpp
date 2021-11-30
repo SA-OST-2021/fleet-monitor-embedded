@@ -2,7 +2,7 @@
 #include "utils.h"
 #include "USB.h"
 
-ConfigParser::ConfigParser(void) {}
+ConfigParser::ConfigParser(const char* path) : filePath(path) {}
 
 bool ConfigParser::loadFile(const char* path) {
   filePath = path;
@@ -99,6 +99,12 @@ bool ConfigParser::sendFrameName(void) {
 bool ConfigParser::saveFile(const char* path) {
   if (path != NULL) {
     filePath = path;
+  }
+  if (fatfs.exists(filePath)) {
+    if (!fatfs.remove(filePath)) {
+      USBSerial.println("Could not remove file");
+      return false;
+    }
   }
   File file = fatfs.open(filePath, FILE_WRITE);
   if (!file) {

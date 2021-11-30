@@ -9,7 +9,7 @@ enum FilterType { NO_FILTER, ON_CHANGE, MAX_INTERVAL };
 
 class ConfigParser {
  public:
-  ConfigParser(void);
+  ConfigParser(const char* path);
   bool loadFile(const char* path);
   bool loadString(Client& client, bool save = true);
   const char* getName(uint16_t pgn);

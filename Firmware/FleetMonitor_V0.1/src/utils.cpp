@@ -77,6 +77,7 @@ bool utils_systemConfig(const char* fileName) {
   settings.hostPort = systemParser.getHostPort();
   settings.configMode = systemParser.getConfigMode();
   settings.connectionType = systemParser.getConnectionType();
+  settings.overwriteFile = systemParser.getOverwriteState();
   const char* password = systemParser.getPassword();
   bool valid = false;
   if (password) {

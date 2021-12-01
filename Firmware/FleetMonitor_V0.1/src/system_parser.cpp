@@ -74,6 +74,13 @@ ConfigMode SystemParser::getConfigMode(void) {
   return (ConfigMode)-1;
 }
 
+bool SystemParser::getOverwriteState(void) {
+  if (doc.containsKey("overwrite_file")) {
+    return doc["overwrite_file"].as<bool>();
+  }
+  return false;
+}
+
 bool SystemParser::getBootloaderMode(bool clearFlag) {
   bool bootloader = false;
   if (doc.containsKey("bootloader")) {

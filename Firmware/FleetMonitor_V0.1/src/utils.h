@@ -18,6 +18,7 @@ struct Settings {
   int16_t hostPort;
   ConnectionType connectionType;
   ConfigMode configMode;
+  bool overwriteFile;
 };
 
 bool utils_init(const char* labelName, bool forceFormat = false);

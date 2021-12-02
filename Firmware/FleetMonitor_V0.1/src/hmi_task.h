@@ -10,7 +10,7 @@
 #define STATUS_LED_BLUE   6
 
 #define LED_BLINK_TIME    500       // [ms]
-#define LED_BREATH_TIME   1000      // [ms]
+#define LED_BREATH_TIME   2000      // [ms]
 
 enum led_type_e {LED_STATUS, LED_CAN};
 enum led_mode_e {LED_OFF, LED_ON, LED_BLINK, LED_BREATH};

@@ -12,13 +12,13 @@
 void setup() {
   xTaskCreate(task_hmi, "task_hmi", 1024, NULL, 1, NULL);
   vTaskDelay(10);
-  // hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_BREATH, .color = GREEN});
+  hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_BREATH, .color = GREEN});
 
   utils_init("MONITOR");
   utils_systemConfig("system.json");
 
   // TODO: Remove blocking USBSerial in final version
-  while (!USBSerial) yield();
+  //while (!USBSerial) yield();
   USBSerial.printf(CLEAR_TERMINAL);
   USBSerial.println("FleetMonitor_V0.1");
 

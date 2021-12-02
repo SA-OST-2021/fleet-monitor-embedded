@@ -102,6 +102,8 @@ void check_connection_status() {
   static bool ethernet_already_connected = false;
   static bool wifi_already_connected = false;
 
+  static int timeout = 0;
+
   /** Ethernet stuff **/
   IPAddress no_ip(0, 0, 0, 0);
 
@@ -125,19 +127,20 @@ void check_connection_status() {
     if (Ethernet.localIP() == no_ip && Ethernet.linkStatus() == LinkON) {
       USBSerial.println("[ETH] Waiting for IP..");
     }
-  }
-*/
+  }*/
+
   // Check for Hardware connection
   if (Ethernet.hardwareStatus() != EthernetW5500) {
     Ethernet.begin(mac, 1000, 1000);
   }
   // Check for Link Connection
   else if (Ethernet.linkStatus() != LinkON) {
-    Ethernet.setLocalIP(no_ip);
+    // Ethernet.setLocalIP(no_ip);
   }
 
   // Check both Link and IP
-  if (Ethernet.localIP() == no_ip && Ethernet.linkStatus() == LinkON) {
+  if (Ethernet.localIP() == no_ip && Ethernet.linkStatus() == LinkON && (timeout + 10000) < xTaskGetTickCount()) {
+    timeout = xTaskGetTickCount();
     Ethernet.begin(mac, 1000, 1000);
   }
 
@@ -160,8 +163,8 @@ void check_connection_status() {
     } else if (WiFi.status() != WL_CONNECTED) {
       USBSerial.println("[WiFi] Waiting for Connection..");
     }
-  }
-*/
+  }*/
+
   if (WiFi.status() != WL_CONNECTED) {
     if (WiFi.status() == WL_NO_SHIELD) {
       WiFi.begin(ssid, pass);

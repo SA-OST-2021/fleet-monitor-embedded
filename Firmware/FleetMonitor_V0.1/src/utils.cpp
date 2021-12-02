@@ -126,13 +126,13 @@ bool utils_startMsc(void)
 }
 
 bool utils_format(const char* labelName) {
-  FATFS elmchamFatfs;
-  uint8_t workbuf[4096];  // Working buffer for f_fdisk function.
+  static FATFS elmchamFatfs;
+  static uint8_t workbuf[4096];  // Working buffer for f_fdisk function.
 
   USBSerial.println("[UTILS] Partitioning flash with 1 primary partition...");
-  DWORD plist[] = {100, 0, 0, 0};      // 1 primary partition with 100% of space.
-  uint8_t buf[512] = {0};              // Working buffer for f_fdisk function.
-  FRESULT r = f_fdisk(0, plist, buf);  // Partition the flash with 1 partition that takes the entire space.
+  static DWORD plist[] = {100, 0, 0, 0};      // 1 primary partition with 100% of space.
+  static uint8_t buf[512] = {0};              // Working buffer for f_fdisk function.
+  static FRESULT r = f_fdisk(0, plist, buf);  // Partition the flash with 1 partition that takes the entire space.
   if (r != FR_OK) {
     USBSerial.print("[UTILS] Error, f_fdisk failed with error code: ");
     USBSerial.println(r, DEC);
@@ -170,6 +170,7 @@ bool utils_format(const char* labelName) {
     return 0;
   }
   USBSerial.println("[UTILS] Flash chip successfully formatted with new empty filesystem!");
+  yield();
   return 1;
 }
 

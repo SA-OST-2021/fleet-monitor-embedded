@@ -62,7 +62,10 @@ void task_hmi(void *pvParameter) {
     if(longPressTimer >= LONG_PRESS_TIME / TASK_IMU_FREQ) {
       longPressTimer = 0;
       setLedColor(LED_STATUS, RED);
+      TinyUSBDevice.detach();
       utils_format("MONITOR");
+      vTaskDelay(500);
+      yield();
       usb_persist_restart(RESTART_NO_PERSIST);
     }
 

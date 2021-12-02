@@ -106,7 +106,7 @@ void check_connection_status() {
   IPAddress no_ip(0, 0, 0, 0);
 
   // Diagnostics Print, only on change
-  if (eth_harware_status != Ethernet.hardwareStatus() || eth_link_status != Ethernet.linkStatus() ||
+  /*if (eth_harware_status != Ethernet.hardwareStatus() || eth_link_status != Ethernet.linkStatus() ||
       eth_ip != Ethernet.localIP()) {
     eth_harware_status = Ethernet.hardwareStatus();
     eth_link_status = Ethernet.linkStatus();
@@ -126,7 +126,7 @@ void check_connection_status() {
       USBSerial.println("[ETH] Waiting for IP..");
     }
   }
-
+*/
   // Check for Hardware connection
   if (Ethernet.hardwareStatus() != EthernetW5500) {
     Ethernet.begin(mac, 1000, 1000);
@@ -145,7 +145,7 @@ void check_connection_status() {
 
   /** WiFi Stuff **/
   // Diagnostics Print, only on change
-  if (wifi_status != WiFi.status() || wifi_ip != WiFi.localIP()) {
+  /*if (wifi_status != WiFi.status() || wifi_ip != WiFi.localIP()) {
     wifi_status = WiFi.status();
     wifi_ip = WiFi.localIP();
     USBSerial.print("[WiFi] Status: ");
@@ -161,7 +161,7 @@ void check_connection_status() {
       USBSerial.println("[WiFi] Waiting for Connection..");
     }
   }
-
+*/
   if (WiFi.status() != WL_CONNECTED) {
     if (WiFi.status() == WL_NO_SHIELD) {
       WiFi.begin(ssid, pass);
@@ -183,9 +183,11 @@ void check_connection_status() {
     ethernet_already_connected = true;
     wifi_already_connected = false;
     client.begin(ethclient, "http://");
+    USBSerial.println("Connected over Ethernet");
   } else if (wifi_connected && !ethernet_connected && !wifi_already_connected) {
     wifi_already_connected = true;
     client.begin(wificlient, "http://");
+    USBSerial.println("Connected over WiFi");
   }
 
   network_connected = wifi_connected | ethernet_connected;

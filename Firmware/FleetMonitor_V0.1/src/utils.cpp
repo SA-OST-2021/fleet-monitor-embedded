@@ -10,6 +10,12 @@
 #include "secure_boot.h"  // Include this local version befor global efuse module, due to compile issues
 #include "esp_efuse.h"
 #include "esp_efuse_table.h"
+#include "soc/soc.h"
+#include "soc/efuse_reg.h"
+#include "soc/rtc_cntl_reg.h"
+#include "soc/system_reg.h"
+#include "soc/usb_periph.h"
+#include "soc/usb_reg.h"
 
 #define EEPROM_SIZE          64
 #define EEPROM_ADDR_STATUS   0x00
@@ -107,10 +113,13 @@ bool utils_systemConfig(const char* fileName) {
 
   if (systemParser.getBootloaderMode()) {
     USBSerial.println("[UTILS] Going to reset ESP32...");
-    yield();
-    vTaskDelay(2500);  // Give some time to save file on flash
-    usb_persist_restart(RESTART_BOOTLOADER);
-    USBSerial.println("[UTILS] Should be dead now... ._.");
+    TinyUSBDevice.detach();
+    vTaskDelay(3000);  // Give some time to save file on flash
+
+    USB0.grstctl |= USB_CSFTRST;
+    while ((USB0.grstctl & USB_CSFTRST) == USB_CSFTRST);
+    REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+    esp_restart();
   }
 
   return true;

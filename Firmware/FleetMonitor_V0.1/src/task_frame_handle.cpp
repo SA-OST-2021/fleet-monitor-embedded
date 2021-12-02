@@ -19,7 +19,7 @@ extern USBCDC USBSerial;
 ESP32Time rtc;
 
 #define FRAME_SIZE    256
-#define DOCUMENT_SIZE 256 * 8
+#define DOCUMENT_SIZE 256 * 16
 
 #define CONFIG_LOAD_MAX_RETRIES 5
 

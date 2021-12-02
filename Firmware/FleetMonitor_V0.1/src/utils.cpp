@@ -175,8 +175,6 @@ bool utils_isUpdated(bool clearFlag) {
 }
 
 bool utils_updateEfuse(void) {
-  while (!USBSerial) yield();
-
   esp_err_t err = ESP_OK;
   uint8_t efuseUartPrintControl, efuseUartPrintChannel;
   err |= esp_efuse_read_field_blob(ESP_EFUSE_UART_PRINT_CONTROL, &efuseUartPrintControl, 2);
@@ -196,10 +194,9 @@ bool utils_updateEfuse(void) {
 
 Settings& utils_getSettings(void) { return settings; }
 
-String& utils_getServerAddress(void)
-{
+String& utils_getServerAddress(void) {
   static String address = "http://" + String(settings.hostIp);
-  if(settings.hostPort != 80) {
+  if (settings.hostPort != 80) {
     address += ":" + String(settings.hostPort);
   }
   return address;

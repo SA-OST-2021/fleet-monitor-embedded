@@ -23,6 +23,7 @@ struct Settings {
 
 bool utils_init(const char* labelName, bool forceFormat = false);
 bool utils_systemConfig(const char* fileName);
+bool utils_startMsc(void);
 bool utils_format(const char* labelName);
 bool utils_isUpdated(bool clearFlag = true);
 bool utils_updateEfuse(void);

@@ -44,13 +44,6 @@ bool utils_init(const char* labelName, bool forceFormat) {
     return 0;
   }
 
-  usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
-  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
-  usb_msc.setCapacity(flash.size() / 512,
-                      512);    // Set disk size, block size should be 512 regardless of spi flash page size
-  usb_msc.setUnitReady(true);  // MSC is ready for read/write
-  usb_msc.begin();
-
   if (!fatfs.begin(&flash) || forceFormat)  // Check if disk must be formated
   {
     USBSerial.println("[UTILS] No FAT File system found, try to format disk...");
@@ -62,6 +55,8 @@ bool utils_init(const char* labelName, bool forceFormat) {
     return false;
   }
 
+  yield();
+  vTaskDelay(200);
   return true;
 }
 
@@ -112,12 +107,22 @@ bool utils_systemConfig(const char* fileName) {
 
   if (systemParser.getBootloaderMode()) {
     USBSerial.println("[UTILS] Going to reset ESP32...");
+    yield();
     vTaskDelay(2500);  // Give some time to save file on flash
     usb_persist_restart(RESTART_BOOTLOADER);
     USBSerial.println("[UTILS] Should be dead now... ._.");
   }
 
   return true;
+}
+
+bool utils_startMsc(void)
+{
+  usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
+  usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
+  usb_msc.setCapacity(flash.size() / 512, 512);    // Set disk size, block size should be 512 regardless of spi flash page size
+  usb_msc.setUnitReady(true);  // MSC is ready for read/write
+  return usb_msc.begin();
 }
 
 bool utils_format(const char* labelName) {

@@ -1,10 +1,10 @@
 #include "hmi_task.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "Adafruit_TinyUSB.h"
+#include "utils.h"
 
 #define TASK_IMU_FREQ 10  // TODO: Change to frequency
-#include <USB.h>
-extern USBCDC USBSerial;
 
 QueueHandle_t hmiQueue;
 
@@ -28,8 +28,8 @@ void task_hmi(void *pvParameter) {
   const TickType_t task_freq = TASK_IMU_FREQ;
   TickType_t task_last_tick = xTaskGetTickCount();
   hmiQueue = xQueueCreate(10, sizeof(led_t));
-  uint32_t blinkTimer = 0, breathTimer = 0;
-  bool blinkFlag = false, breathFlag = true;
+  uint32_t blinkTimer = 0, blinkFastTimer = 0, breathTimer = 0;
+  bool blinkFlag = false, blinkFastFlag = false, breathFlag = true;
   bool updateLedFlag = true;
   uint8_t breathValue = 0;
   led_t leds[2];
@@ -42,6 +42,7 @@ void task_hmi(void *pvParameter) {
   digitalWrite(STATUS_LED_GREEN, 1);
   digitalWrite(STATUS_LED_BLUE, 1);
 
+  pinMode(USER_BUTTON, INPUT_PULLUP);
   pinMode(CAN_LED_RED, OUTPUT);
   pinMode(CAN_LED_GREEN, OUTPUT);
   pinMode(CAN_LED_BLUE, OUTPUT);
@@ -51,6 +52,19 @@ void task_hmi(void *pvParameter) {
 
   while (true) {
     led_t led;
+
+    static uint32_t longPressTimer = 0;
+    if(!digitalRead(USER_BUTTON)) {
+      longPressTimer++;
+    } else {
+      longPressTimer = 0;
+    }
+    if(longPressTimer >= LONG_PRESS_TIME / TASK_IMU_FREQ) {
+      longPressTimer = 0;
+      setLedColor(LED_STATUS, RED);
+      utils_format("MONITOR");
+      usb_persist_restart(RESTART_NO_PERSIST);
+    }
 
     if (xQueueReceive(hmiQueue, &(led), (TickType_t)0) == pdPASS) {
       if (led.type == LED_STATUS) {
@@ -81,6 +95,9 @@ void task_hmi(void *pvParameter) {
         case LED_BLINK:
           setLedColor(leds[i].type, blinkFlag ? leds[i].color : NONE);
           break;
+        case LED_BLINK_FAST:
+          setLedColor(leds[i].type, blinkFastFlag ? leds[i].color : NONE);
+          break;
         case LED_BREATH:
           setLedColor(leds[i].type, leds[i].color, gamma8[breathValue]);
           break;
@@ -93,6 +110,11 @@ void task_hmi(void *pvParameter) {
     if (blinkTimer >= LED_BLINK_TIME / TASK_IMU_FREQ) {
       blinkTimer = 0;
       blinkFlag = !blinkFlag;
+    }
+    blinkFastTimer++;
+    if (blinkFastTimer >= LED_BLINK_FAST_TIME / TASK_IMU_FREQ) {
+      blinkFastTimer = 0;
+      blinkFastFlag = !blinkFastFlag;
     }
     if (breathFlag) {
       breathTimer++;

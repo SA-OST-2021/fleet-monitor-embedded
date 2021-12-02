@@ -16,9 +16,8 @@ void setup() {
 
   utils_init("MONITOR");
   utils_systemConfig("system.json");
+  utils_startMsc();
 
-  // TODO: Remove blocking USBSerial in final version
-  // while (!USBSerial) yield();
   USBSerial.printf(CLEAR_TERMINAL);
   USBSerial.println("FleetMonitor_V0.1");
 

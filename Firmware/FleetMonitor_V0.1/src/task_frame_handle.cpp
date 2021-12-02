@@ -19,7 +19,7 @@ extern USBCDC USBSerial;
 ESP32Time rtc;
 
 #define FRAME_SIZE    256
-#define DOCUMENT_SIZE 256 * 32
+#define DOCUMENT_SIZE 256 * 8
 
 #define CONFIG_LOAD_MAX_RETRIES 5
 
@@ -34,7 +34,6 @@ void task_frame_handler(void *pvParameter) {
   while (1) {
     Fms frame;
     if (xQueueReceive(fmsQueue, &(frame), portMAX_DELAY) == pdPASS) {
-      // if(config.getFilter(frame.getPgn()) )
       StaticJsonDocument<256> entry;
       String epoch = "";
       epoch += String(rtc.getEpoch()) + "." + String(rtc.getMillis());
@@ -49,6 +48,11 @@ void task_frame_handler(void *pvParameter) {
       }
       dataBuffer[16] = 0;
       entry["data"] = dataBuffer;
+
+      if (config.sendFrameName()) {
+        entry["name"] = config.getName(frame.getPgn());
+      }
+
       doc.add(entry);
       entry.clear();
       if (doc.memoryUsage() + FRAME_SIZE >= DOCUMENT_SIZE) {
@@ -80,7 +84,7 @@ bool send_data_to_client() {
 
   deserializeJson(response, client.getStream());
   int d, m, y, H, M, S;
-  int matches = sscanf(response["Date"].as<const char *>(), "%d %d %d %d:%d:%d", &d, &m, &y, &H, &M, &S);
+  int matches = sscanf(response["Date"].as<const char *>(), "%d %d %d %d:%d:%d", &y, &m, &d, &H, &M, &S);
   if (matches == 6) {
     rtc.setTime(S, M, H, d, m, y);
     time_set = true;

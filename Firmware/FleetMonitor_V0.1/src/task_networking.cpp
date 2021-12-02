@@ -39,6 +39,7 @@ bool wifi_connected = false;
 bool network_connected = false;
 
 bool config_loaded = false;
+bool send_frame_names = false;
 
 void check_connection_status();
 void eth_init();
@@ -178,7 +179,7 @@ void check_connection_status() {
     ethernet_already_connected = true;
     client.begin(ethclient, "http://");
   } else if (wifi_connected && !network_connected)
-    client.begin(ethclient, "http://");  // TODO change to wifi / add port
+    client.begin(wificlient, "http://");  // TODO change to wifi / add port
 
   network_connected = wifi_connected | ethernet_connected;
   if (network_connected == false) ethernet_already_connected = false;

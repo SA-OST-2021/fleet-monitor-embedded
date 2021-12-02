@@ -15,10 +15,11 @@ void setup() {
   hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = GREEN});
 
   utils_init("MONITOR");
+  while (!USBSerial) yield();
   utils_systemConfig("system.json");
 
   // TODO: Remove blocking USBSerial in final version
-  // while (!USBSerial) yield();
+
   USBSerial.printf(CLEAR_TERMINAL);
   USBSerial.println("FleetMonitor_V0.1");
 

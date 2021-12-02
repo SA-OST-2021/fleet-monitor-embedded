@@ -100,6 +100,7 @@ void check_connection_status() {
   static TickType_t wifi_disconnect_time = xTaskGetTickCount();
 
   static bool ethernet_already_connected = false;
+  static bool wifi_already_connected = false;
 
   /** Ethernet stuff **/
   IPAddress no_ip(0, 0, 0, 0);
@@ -174,15 +175,20 @@ void check_connection_status() {
 
   wifi_connected = ((WiFi.localIP() != no_ip) && (WiFi.status() == WL_CONNECTED));
 
+  if (ethernet_connected == false) ethernet_already_connected = false;
+  if (wifi_connected == false) wifi_already_connected = false;
+
   // Prioritize Ethernet over WIFI
   if (ethernet_connected && !ethernet_already_connected) {
     ethernet_already_connected = true;
+    wifi_already_connected = false;
     client.begin(ethclient, "http://");
-  } else if (wifi_connected && !network_connected)
-    client.begin(wificlient, "http://");  // TODO change to wifi / add port
+  } else if (wifi_connected && !ethernet_connected && !wifi_already_connected) {
+    wifi_already_connected = true;
+    client.begin(wificlient, "http://");
+  }
 
   network_connected = wifi_connected | ethernet_connected;
-  if (network_connected == false) ethernet_already_connected = false;
 }
 
 bool get_config_from_server() {
@@ -192,7 +198,6 @@ bool get_config_from_server() {
   if (statusCode != 200) return false;
   USBSerial.print("Status code: ");
   USBSerial.println(statusCode);
-  // client.getStream()
-  return config.loadString(client.getStream());
-  // USBSerial.println(client.getString());
+
+  return config.loadString(client.getStream(), false);
 }

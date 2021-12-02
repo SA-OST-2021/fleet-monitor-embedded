@@ -51,7 +51,6 @@ void task_can(void *pvParameter) {
     if (twai_receive(&rx_frame, 1000) != ESP_OK) {
       can_connected = false;
       hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK, .color = BLUE});
-      USBSerial.println("CAN-Bus Timeout");
     } else {
       hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK, .color = GREEN});
       can_connected = true;

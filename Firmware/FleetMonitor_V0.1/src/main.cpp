@@ -15,6 +15,7 @@ void setup() {
   hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = GREEN});
 
   utils_init("MONITOR");
+  while (!USBSerial) yield();
   utils_systemConfig("system.json");
   utils_startMsc();
 

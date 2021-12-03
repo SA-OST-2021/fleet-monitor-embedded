@@ -89,31 +89,59 @@ fuelConsumption["fuelConsumption"] = (fuelConsumption["4"] +
                                       fuelConsumption["7"] * 256**3) / 1000.0
 fuelConsumption["fuelConsumption"] -= fuelConsumption["fuelConsumption"].iloc[0]
 
+fuelEconomy = df[df["pgn"] == 0xFEF2]
+fuelEconomy["fuelRate"] = (fuelEconomy["0"] + 
+                           fuelEconomy["1"] * 256) * 0.05
+fuelEconomy["fuelEconomy"] = (fuelEconomy["2"] + 
+                              fuelEconomy["3"] * 256) / 512
+
+
 doors = df[df["pgn"] == 0xFDA5]
 doorStatus = {0x00: "closed", 0x01: "open", 0x02: "error", 0x03: "not available"}
-doors["door1"] = doors.replace({"0": doorStatus})
+doors["door1"] = pd.Series((doors["0"] & 0x0C) // 4).map(doorStatus)
+doors["door2"] = pd.Series(doors["1"] & 0x03).map(doorStatus)
 
-# (doors["0"] & 0x0C).values >> 2)
+suspension = df[df["pgn"] == 0xFE58]
+suspension["suspension"] = (suspension["0"] + 
+                            suspension["1"] * 256 + 
+                            suspension["2"] * 256**2  +
+                            suspension["3"] * 256**3  +
+                            suspension["4"] * 256**4  +
+                            suspension["5"] * 256**5  +
+                            suspension["6"] * 256**6  +
+                            suspension["7"] * 256**7) / 10.0
 
 
-
-fig = make_subplots(rows=4, cols=1)
+fig = make_subplots(rows=5, cols=1, shared_xaxes=True)
 
 fig.add_trace(go.Scatter(x=tachograph["date"], y=tachograph["speed"],
                          name="Vehicle Speed [km/h]",
                          fill="tozeroy"), row=1, col=1)
 
-fig.add_trace(go.Scatter(x=tachograph["date"], y=fuelConsumption["fuelConsumption"],
+fig.add_trace(go.Scatter(x=fuelConsumption["date"], y=fuelConsumption["fuelConsumption"],
                          name="Fuel Consumption [l]",
                          fill="tozeroy"), row=2, col=1)
 
-# fig.add_trace(go.Scatter(x=tachograph["date"], y=tachograph["speed"],
-#                          name="Vehicle Speed [km/h]",
-#                          fill="tozeroy"), row=3, col=1)
+fig.add_trace(go.Scatter(x=fuelEconomy["date"], y=fuelEconomy["fuelRate"],
+                         name="Fuel Rate [l/h]",
+                         fill="tozeroy"), row=3, col=1)
 
-# fig.add_trace(go.Scatter(x=tachograph["date"], y=tachograph["speed"],
-#                          name="Vehicle Speed [km/h]",
-#                          fill="tozeroy"), row=4, col=1)
+fig.add_trace(go.Scatter(x=fuelEconomy["date"], y=fuelEconomy["fuelEconomy"],
+                         name="Fuel Economy [km/l]",
+                         fill="tozeroy"), row=3, col=1)
+
+fig.add_trace(go.Scatter(x=doors["date"], y=doors["door1"],
+                          name="Door 1 Open State",
+                          fill="tozeroy"), row=4, col=1)
+
+fig.add_trace(go.Scatter(x=doors["date"], y=doors["door2"],
+                          name="Door 2 Open State",
+                          fill="tozeroy"), row=4, col=1)
+
+fig.add_trace(go.Scatter(x=suspension["date"], y=suspension["suspension"],
+                          name="Air Suspension Control [kPa]",
+                          fill="tozeroy"), row=5, col=1)
 
 fig.update_layout(width=1800, title_text=fileName)
 fig.show()
+fig.write_html("plot.html")

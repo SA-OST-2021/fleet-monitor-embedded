@@ -9,7 +9,7 @@
 
 #include "task_can.h"
 #include "task_networking.h"
-#include "hmi_task.h"
+#include "task_hmi.h"
 
 extern USBCDC USBSerial;
 
@@ -38,7 +38,7 @@ void task_can(void *pvParameter) {
   }
   USBSerial.println("CAN Initialization Done");
 
-  hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK, .color = BLUE});
+  hmi_setLed(led_t{.type = LED_CAN, .mode = LED_OFF, .color = RED});
 
   Fms known_frames[100];
   uint32_t nr_known_frames = 0;
@@ -50,7 +50,7 @@ void task_can(void *pvParameter) {
     twai_message_t rx_frame;
     if (twai_receive(&rx_frame, 1000) != ESP_OK) {
       can_connected = false;
-      hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK, .color = BLUE});
+      hmi_setLed(led_t{.type = LED_CAN, .mode = LED_OFF, .color = GREEN});
     } else {
       hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK, .color = GREEN});
       can_connected = true;

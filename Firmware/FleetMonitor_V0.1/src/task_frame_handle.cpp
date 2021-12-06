@@ -12,6 +12,7 @@
 #include "task_can.h"
 #include "task_frame_handler.h"
 #include "task_networking.h"
+#include "task_hmi.h"
 
 #include "ESP32Time.h"
 
@@ -19,7 +20,7 @@ extern USBCDC USBSerial;
 ESP32Time rtc;
 
 #define FRAME_SIZE    256
-#define DOCUMENT_SIZE 256 * 16
+#define DOCUMENT_SIZE 256 * 32
 
 #define CONFIG_LOAD_MAX_RETRIES 5
 
@@ -29,6 +30,7 @@ bool send_data_to_client();
 
 void task_frame_handler(void *pvParameter) {
   // Wait until we have network, config and can initialized
+
   while (!network_connected && !config_loaded && !can_connected) vTaskDelay(1000);
 
   while (1) {
@@ -58,7 +60,11 @@ void task_frame_handler(void *pvParameter) {
       if (doc.memoryUsage() + FRAME_SIZE >= DOCUMENT_SIZE) {
         if (network_connected) {
           USBSerial.println("Data sent!");
-          send_data_to_client();
+          if (send_data_to_client()) {
+            hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = ethernet_connected ? GREEN : YELLOW});
+          } else {
+            hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = MAGENTA});
+          }
         }
         doc.clear();
       }

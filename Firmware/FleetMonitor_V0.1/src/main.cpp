@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 #include "utils.h"
-#include "hmi_task.h"
+#include "task_hmi.h"
 #include "task_can.h"
 #include "task_frame_handler.h"
 #include "task_networking.h"
@@ -12,21 +12,24 @@
 void setup() {
   xTaskCreate(task_hmi, "task_hmi", 1024, NULL, 1, NULL);
   vTaskDelay(10);
-  hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = GREEN});
+  hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_BREATH, .color = WHITE});
 
-  utils_init("MONITOR");
-  utils_systemConfig("system.json");
-  utils_startMsc();
-
+  bool error = false;
+  error |= !utils_init("MONITOR");
+  error |= !utils_systemConfig("system.json");
+  error |= !utils_startMsc();
+  if (error) {
+    hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_BLINK_FAST, .color = RED});
+    while (1) yield();
+  }
+  // TODO in utils
   USBSerial.printf(CLEAR_TERMINAL);
   USBSerial.println("FleetMonitor_V0.1");
 
   xTaskCreate(task_accel, "task_accel", 2048, NULL, 1, NULL);
-  xTaskCreate(task_networking, "task_networking", 32096, NULL, 1, NULL);
-  xTaskCreate(task_can, "task_can", 14096, NULL, 1, NULL);
-  xTaskCreate(task_frame_handler, "task_frame_handler", 16096, NULL, 3, NULL);
-
-  USBSerial.println("Task Initialization Done");
+  xTaskCreate(task_networking, "task_networking", 8192, NULL, 1, NULL);
+  xTaskCreate(task_can, "task_can", 8192, NULL, 1, NULL);
+  xTaskCreate(task_frame_handler, "task_frame_handler", 8192, NULL, 3, NULL);
 }
 
 void loop() {}

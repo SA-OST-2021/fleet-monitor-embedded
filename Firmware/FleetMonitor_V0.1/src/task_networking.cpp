@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "task_networking.h"
+#include "task_hmi.h"
 
 // FreeRTOS includes
 #include "freertos/FreeRTOS.h"
@@ -56,24 +57,26 @@ void task_networking(void *pvParameter) {
   TickType_t config_load_timeout = xTaskGetTickCount();
   while (1) {
     check_connection_status();
-    if (utils_getSettings().configMode == LOCAL && !config_loaded) {
-      if (!config.loadFile("config.json")) {
-        USBSerial.println("Config loading failed.");
-      } else {
+    if (!network_connected) {
+      hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_BREATH, .color = BLUE});
+    } else if (utils_getSettings().configMode == LOCAL && !config_loaded) {
+      if (config.loadFile("config.json")) {
         USBSerial.println("Config loading was successful.");
         config_loaded = true;
+      } else {
+        USBSerial.println("Local config loading failed.");
+        hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = RED});
       }
-    } else {
-      if (network_connected && !config_loaded) {
-        if (config_load_timeout + CONFIG_LOAD_TIMEOUT < xTaskGetTickCount()) {
-          USBSerial.println("Loading config from server");
-          if (get_config_from_server()) {
-            USBSerial.println("Config loading successful!");
-            config_loaded = true;
-          } else {
-            USBSerial.println("Config loading failed, trying again..");
-            config_load_timeout = xTaskGetTickCount();
-          }
+    } else if (!config_loaded) {
+      if (config_load_timeout + CONFIG_LOAD_TIMEOUT < xTaskGetTickCount()) {
+        USBSerial.println("Loading config from server");
+        if (get_config_from_server()) {
+          USBSerial.println("Config loading successful!");
+          config_loaded = true;
+        } else {
+          USBSerial.println("Config loading failed, trying again..");
+          hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = RED});
+          config_load_timeout = xTaskGetTickCount();
         }
       }
     }
@@ -204,5 +207,6 @@ bool get_config_from_server() {
   USBSerial.print("Status code: ");
   USBSerial.println(statusCode);
 
-  return config.loadString(client.getStream(), false);
+  // TODO: investigate system lockup when saving file locally
+  return config.loadString(client.getStream(), utils_getSettings().overwriteFile);
 }

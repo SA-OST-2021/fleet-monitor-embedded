@@ -40,6 +40,9 @@ bool utils_init(const char* labelName, bool forceFormat) {
   USB.productName("Fleet-Monitor");
   USBSerial.begin(0);
 
+  USBSerial.printf(CLEAR_TERMINAL);
+  USBSerial.println("FleetMonitor_V0.1");
+
   if (!EEPROM.begin(EEPROM_SIZE)) {
     USBSerial.println("[UTILS] Failed to initialise EEPROM");
     return 0;
@@ -117,7 +120,8 @@ bool utils_systemConfig(const char* fileName) {
     vTaskDelay(3000);  // Give some time to save file on flash
 
     USB0.grstctl |= USB_CSFTRST;
-    while ((USB0.grstctl & USB_CSFTRST) == USB_CSFTRST);
+    while ((USB0.grstctl & USB_CSFTRST) == USB_CSFTRST)
+      ;
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
     esp_restart();
   }
@@ -125,11 +129,11 @@ bool utils_systemConfig(const char* fileName) {
   return true;
 }
 
-bool utils_startMsc(void)
-{
+bool utils_startMsc(void) {
   usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
   usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
-  usb_msc.setCapacity(flash.size() / 512, 512);    // Set disk size, block size should be 512 regardless of spi flash page size
+  usb_msc.setCapacity(flash.size() / 512,
+                      512);    // Set disk size, block size should be 512 regardless of spi flash page size
   usb_msc.setUnitReady(true);  // MSC is ready for read/write
   return usb_msc.begin();
 }

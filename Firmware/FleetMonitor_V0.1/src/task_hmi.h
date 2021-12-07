@@ -16,7 +16,7 @@
 #define LONG_PRESS_TIME     5000  // [ms]
 
 enum led_type_e { LED_STATUS, LED_CAN };
-enum led_mode_e { LED_OFF, LED_ON, LED_BLINK, LED_BLINK_FAST, LED_BREATH };
+enum led_mode_e { LED_OFF, LED_ON, LED_BLINK, LED_BLINK_FAST, LED_FLASH, LED_BREATH };
 enum led_color_e { NONE, RED, GREEN, BLUE, MAGENTA, CYAN, YELLOW, WHITE };
 
 struct led_t {

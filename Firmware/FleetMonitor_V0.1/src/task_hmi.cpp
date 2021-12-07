@@ -86,6 +86,7 @@ void task_hmi(void *pvParameter) {
       leds[0] = nextLeds[0];
       leds[1] = nextLeds[1];
     }
+    updateLedFlag = false;
 
     for (int i = 0; i < sizeof(leds) / sizeof(leds[0]); i++) {
       switch (leds[i].mode) {
@@ -101,6 +102,11 @@ void task_hmi(void *pvParameter) {
         case LED_BLINK_FAST:
           setLedColor(leds[i].type, blinkFastFlag ? leds[i].color : NONE);
           break;
+        case LED_FLASH:
+          setLedColor(leds[i].type, leds[i].color);
+          leds[i].mode = LED_OFF;  // Flash once
+          updateLedFlag = true;
+          break;
         case LED_BREATH:
           setLedColor(leds[i].type, leds[i].color, gamma8[breathValue]);
           break;
@@ -108,7 +114,7 @@ void task_hmi(void *pvParameter) {
           break;
       }
     }
-    updateLedFlag = false;
+
     blinkTimer++;
     if (blinkTimer >= LED_BLINK_TIME / TASK_IMU_FREQ) {
       blinkTimer = 0;

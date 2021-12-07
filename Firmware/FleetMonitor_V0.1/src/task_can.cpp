@@ -52,7 +52,7 @@ void task_can(void *pvParameter) {
       can_connected = false;
       hmi_setLed(led_t{.type = LED_CAN, .mode = LED_OFF, .color = GREEN});
     } else {
-      hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK, .color = GREEN});
+      hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK_FAST, .color = GREEN});  // Data arrives to fast for LED_FLASH
       can_connected = true;
 
       Fms frame(rx_frame);

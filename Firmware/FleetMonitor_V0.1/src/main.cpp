@@ -9,6 +9,8 @@
 #include "task_accel.h"
 #include "utils.h"
 
+#define SYSTEM_MAX_RUNTIME 24 * 3600  // [s]
+
 void setup() {
   xTaskCreate(task_hmi, "task_hmi", 1024, NULL, 1, NULL);
   vTaskDelay(10);
@@ -22,9 +24,6 @@ void setup() {
     hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_BLINK_FAST, .color = RED});
     while (1) yield();
   }
-  // TODO in utils
-  USBSerial.printf(CLEAR_TERMINAL);
-  USBSerial.println("FleetMonitor_V0.1");
 
   xTaskCreate(task_accel, "task_accel", 2048, NULL, 1, NULL);
   xTaskCreate(task_networking, "task_networking", 8192, NULL, 1, NULL);
@@ -32,4 +31,9 @@ void setup() {
   xTaskCreate(task_frame_handler, "task_frame_handler", 8192, NULL, 3, NULL);
 }
 
-void loop() {}
+void loop() {
+  if (xTaskGetTickCount() / 1000 > SYSTEM_MAX_RUNTIME) {
+    esp_restart();
+  }
+  vTaskDelay(1000);
+}

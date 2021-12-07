@@ -89,7 +89,7 @@ bool send_data_to_client() {
   // Check if we already have the time
 
   deserializeJson(response, client.getStream());
-  if (response["ConfigReload"].as<bool>() == true) {
+  if (response["ConfigReload"].as<bool>() == true && utils_getSettings().configMode == REMOTE) {
     config_loaded = false;
   }
   if (time_set == true) return true;

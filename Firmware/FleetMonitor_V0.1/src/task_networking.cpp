@@ -63,6 +63,7 @@ void task_networking(void *pvParameter) {
       if (config.loadFile("config.json")) {
         USBSerial.println("Config loading was successful.");
         config_loaded = true;
+        hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = ethernet_connected ? GREEN : YELLOW});
       } else {
         USBSerial.println("Local config loading failed.");
         hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = RED});
@@ -73,6 +74,7 @@ void task_networking(void *pvParameter) {
         if (get_config_from_server()) {
           USBSerial.println("Config loading successful!");
           config_loaded = true;
+          hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = ethernet_connected ? GREEN : YELLOW});
         } else {
           USBSerial.println("Config loading failed, trying again..");
           hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = RED});

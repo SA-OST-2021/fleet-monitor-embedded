@@ -59,7 +59,6 @@ void task_frame_handler(void *pvParameter) {
       entry.clear();
       if (doc.memoryUsage() + FRAME_SIZE >= DOCUMENT_SIZE) {
         if (network_connected) {
-          USBSerial.println("Data sent!");
           if (send_data_to_client()) {
             hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = ethernet_connected ? GREEN : YELLOW});
           } else {
@@ -81,14 +80,19 @@ bool send_data_to_client() {
   client.setURL(utils_getServerAddress());
   status = client.POST(postData);
 
-  USBSerial.print("Response Code: ");
-  USBSerial.println(status);
-  if (status != 200) return false;
-
+  if (status != 200) {
+    USBSerial.print("Request timed out: ");
+    USBSerial.println(status);
+    return false;
+  }
+  // TODO update config on change
   // Check if we already have the time
-  if (time_set == true) return true;
 
   deserializeJson(response, client.getStream());
+  if (response["ConfigReload"].as<bool>() == true) {
+    config_loaded = false;
+  }
+  if (time_set == true) return true;
   int d, m, y, H, M, S;
   int matches = sscanf(response["Date"].as<const char *>(), "%d %d %d %d:%d:%d", &y, &m, &d, &H, &M, &S);
   if (matches == 6) {

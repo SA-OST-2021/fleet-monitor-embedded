@@ -40,6 +40,9 @@ bool utils_init(const char* labelName, bool forceFormat) {
   USB.productName("Fleet-Monitor");
   USBSerial.begin(0);
 
+  USBSerial.printf(CLEAR_TERMINAL);
+  USBSerial.println("FleetMonitor_V0.1");
+
   if (!EEPROM.begin(EEPROM_SIZE)) {
     USBSerial.println("[UTILS] Failed to initialise EEPROM");
     return 0;

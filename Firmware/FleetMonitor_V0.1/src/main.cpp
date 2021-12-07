@@ -9,7 +9,7 @@
 #include "task_accel.h"
 #include "utils.h"
 
-#define SYSTEM_MAX_RUNTIME    30//24 * 3600   // [s]
+#define SYSTEM_MAX_RUNTIME    24 * 3600   // [s]
 
 void setup() {
   xTaskCreate(task_hmi, "task_hmi", 1024, NULL, 1, NULL);

@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "task_hmi.h"
 #include "USB.h"
 #include "SPI.h"
 #include "SdFat.h"
@@ -7,6 +8,7 @@
 #include "EEPROM.h"
 #include "format/ff.h"
 #include "format/diskio.h"
+#include "freertos/task.h"
 #include "secure_boot.h"  // Include this local version befor global efuse module, due to compile issues
 #include "esp_efuse.h"
 #include "esp_efuse_table.h"
@@ -116,13 +118,16 @@ bool utils_systemConfig(const char* fileName) {
 
   if (systemParser.getBootloaderMode()) {
     USBSerial.println("[UTILS] Going to reset ESP32...");
+    hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_OFF, .color = NONE});
+    hmi_setLed(led_t{.type = LED_CAN, .mode = LED_OFF, .color = NONE});
     TinyUSBDevice.detach();
+    USB0.grstctl |= USB_CSFTRST;
+    while ((USB0.grstctl & USB_CSFTRST) == USB_CSFTRST);
     vTaskDelay(3000);  // Give some time to save file on flash
 
-    USB0.grstctl |= USB_CSFTRST;
-    while ((USB0.grstctl & USB_CSFTRST) == USB_CSFTRST)
-      ;
+    taskENTER_CRITICAL(0);
     REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+    vTaskDelay(1000);
     esp_restart();
   }
 

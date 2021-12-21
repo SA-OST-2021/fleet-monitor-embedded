@@ -1,3 +1,21 @@
+/*
+ * Fleet-Monitor Software
+ * Copyright (C) 2021 Institute of Networked Solutions OST
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "utils.h"
 #include "task_hmi.h"
 #include "USB.h"
@@ -37,6 +55,14 @@ Adafruit_SPIFlash flash(&flashTransport);
 FatFileSystem fatfs;
 SystemParser systemParser;
 
+/**
+ * @brief Initialization of USB, flash, fatfs and efuses
+ *
+ * @param labelName is the name to be displayed on the computer
+ * @param forceFormat is used to maunally reformat the filesystem
+ * @return true on success
+ * @return false on error
+ */
 bool utils_init(const char* labelName, bool forceFormat) {
   USB.begin();
   USB.productName("Fleet-Monitor");
@@ -71,6 +97,13 @@ bool utils_init(const char* labelName, bool forceFormat) {
   return true;
 }
 
+/**
+ * @brief Load system configuration
+ *
+ * @param fileName is the name of the config file
+ * @return true on success
+ * @return false on error
+ */
 bool utils_systemConfig(const char* fileName) {
   if (!systemParser.loadFile(fileName)) {
     USBSerial.println("[UTILS] System config loading failed.");
@@ -122,7 +155,8 @@ bool utils_systemConfig(const char* fileName) {
     hmi_setLed(led_t{.type = LED_CAN, .mode = LED_OFF, .color = NONE});
     TinyUSBDevice.detach();
     USB0.grstctl |= USB_CSFTRST;
-    while ((USB0.grstctl & USB_CSFTRST) == USB_CSFTRST);
+    while ((USB0.grstctl & USB_CSFTRST) == USB_CSFTRST)
+      ;
     vTaskDelay(3000);  // Give some time to save file on flash
 
     taskENTER_CRITICAL(0);
@@ -134,6 +168,12 @@ bool utils_systemConfig(const char* fileName) {
   return true;
 }
 
+/**
+ * @brief Initializes the mass storage device
+ *
+ * @return true
+ * @return false
+ */
 bool utils_startMsc(void) {
   usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
   usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
@@ -143,6 +183,13 @@ bool utils_startMsc(void) {
   return usb_msc.begin();
 }
 
+/**
+ * @brief Format the filesystem
+ *
+ * @param labelName is the name for the mass storage device
+ * @return true on success
+ * @return false on error
+ */
 bool utils_format(const char* labelName) {
   static FATFS elmchamFatfs;
   static uint8_t workbuf[4096];  // Working buffer for f_fdisk function.
@@ -192,12 +239,25 @@ bool utils_format(const char* labelName) {
   return 1;
 }
 
+/**
+ * @brief Check if something in the filesystem changed
+ *
+ * @param clearFlag if the flag is to be cleared
+ * @return true
+ * @return false
+ */
 bool utils_isUpdated(bool clearFlag) {
   bool status = updated;
   if (clearFlag) updated = false;
   return status;
 }
 
+/**
+ * @brief Set the efuses on first bootup, they will never be updated after
+ *
+ * @return true on success
+ * @return false on error
+ */
 bool utils_updateEfuse(void) {
   esp_err_t err = ESP_OK;
   uint8_t efuseUartPrintControl, efuseUartPrintChannel;
@@ -216,8 +276,18 @@ bool utils_updateEfuse(void) {
   return (err == ESP_OK);
 }
 
+/**
+ * @brief Get the utils setting
+ *
+ * @return Settings& with the settings
+ */
 Settings& utils_getSettings(void) { return settings; }
 
+/**
+ * @brief Get the server address
+ *
+ * @return String& with the server url, including the port
+ */
 String& utils_getServerAddress(void) {
   static String address = "http://" + String(settings.hostIp);
   if (settings.hostPort != 80) {

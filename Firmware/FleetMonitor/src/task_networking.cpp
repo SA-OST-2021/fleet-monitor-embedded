@@ -1,3 +1,21 @@
+/*
+ * Fleet-Monitor Software
+ * Copyright (C) 2021 Institute of Networked Solutions OST
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <Arduino.h>
 
 #include "task_networking.h"
@@ -87,13 +105,25 @@ void task_networking(void *pvParameter) {
   }
 }
 
+/**
+ * @brief Initialization of Ethernet interface
+ *
+ */
 void eth_init() {
   Ethernet.init(34);
   Ethernet.begin(mac, 1000, 1000);
 }
 
+/**
+ * @brief Initialization of WiFi interface
+ *
+ */
 void wifi_init() { WiFi.begin(utils_getSettings().ssid, utils_getSettings().password); }
 
+/**
+ * @brief Check and update the connection status of networking interface
+ *
+ */
 void check_connection_status() {
   static EthernetHardwareStatus eth_harware_status = EthernetNoHardware;
   static EthernetLinkStatus eth_link_status = Unknown;
@@ -201,6 +231,12 @@ void check_connection_status() {
   network_connected = wifi_connected | ethernet_connected;
 }
 
+/**
+ * @brief Get the config from server object
+ *
+ * @return true on success
+ * @return false if the config was not received from the server or error in parsing
+ */
 bool get_config_from_server() {
   client.setURL(utils_getServerAddress() + "/config.json");
 

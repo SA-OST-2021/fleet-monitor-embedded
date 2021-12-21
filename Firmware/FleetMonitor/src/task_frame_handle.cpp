@@ -1,3 +1,21 @@
+/*
+ * Fleet-Monitor Software
+ * Copyright (C) 2021 Institute of Networked Solutions OST
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 // FreeRTOS includes
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -71,6 +89,12 @@ void task_frame_handler(void *pvParameter) {
   }
 }
 
+/**
+ * @brief Transmit data to the server
+ *
+ * @return true is returned on success
+ * @return false is returned if the request timed out or bad status code
+ */
 bool send_data_to_client() {
   static bool time_set = false;
   int status;
@@ -85,13 +109,14 @@ bool send_data_to_client() {
     USBSerial.println(status);
     return false;
   }
-  // TODO update config on change
-  // Check if we already have the time
 
+  // Check the response for the configReload flag
   deserializeJson(response, client.getStream());
   if (response["ConfigReload"].as<bool>() == true && utils_getSettings().configMode == REMOTE) {
     config_loaded = false;
   }
+
+  // Synchronize time if not set already
   if (time_set == true) return true;
   int d, m, y, H, M, S;
   int matches = sscanf(response["Date"].as<const char *>(), "%d %d %d %d:%d:%d", &y, &m, &d, &H, &M, &S);

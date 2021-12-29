@@ -45,5 +45,6 @@ bool utils_startMsc(void);
 bool utils_format(const char* labelName);
 bool utils_isUpdated(bool clearFlag = true);
 bool utils_updateEfuse(void);
+bool utils_usbState(void);
 Settings& utils_getSettings(void);
 String& utils_getServerAddress(void);

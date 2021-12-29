@@ -42,6 +42,8 @@
 #define EEPROM_ADDR_PASSWORD 0x01
 #define EEPROM_STATUS_MAGIC  0xA5
 
+#define USB_PIN              10
+
 static int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize);
 static int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize);
 static void msc_flush_cb(void);
@@ -64,6 +66,7 @@ SystemParser systemParser;
  */
 bool utils_init(const char* labelName, bool forceFormat) {
   USB.productName("Fleet-Monitor");
+  pinMode(USB_PIN, INPUT);
 
   if (!EEPROM.begin(EEPROM_SIZE)) {
     Serial.println("[UTILS] Failed to initialise EEPROM");
@@ -260,6 +263,16 @@ bool utils_updateEfuse(void) {
     Serial.println("[UTILS] EFuse have been burned!");
   }
   return (err == ESP_OK);
+}
+
+/**
+ * @brief Return the connection state of the USB Interface (monitors VBUS)
+ *
+ * @return true if USB is detected
+ * @return false if no USB host is available
+ */
+bool utils_usbState(void) {
+  return digitalRead(USB_PIN);
 }
 
 /**

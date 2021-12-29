@@ -56,7 +56,7 @@ void loop() {
   static bool serialState = false;
   if(Serial != serialState) {
     serialState = Serial;
-    vTaskDelay(500);  // Give terminal some time to accept incoming data
+    vTaskDelay(1000);  // Give terminal some time to accept incoming data
     Serial.printf(CLEAR_TERMINAL);
     Serial.println("****************************************************");
     Serial.println("*               onway AG FleetMonitor              *");

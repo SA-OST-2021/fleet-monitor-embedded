@@ -34,7 +34,7 @@
 
 #include "ESP32Time.h"
 
-extern USBCDC USBSerial;
+extern USBCDC Serial;
 ESP32Time rtc;
 
 #define FRAME_SIZE    256
@@ -105,8 +105,8 @@ bool send_data_to_client() {
   status = client.POST(postData);
 
   if (status != 200) {
-    USBSerial.print("Request timed out: ");
-    USBSerial.println(status);
+    Serial.print("Request timed out: ");
+    Serial.println(status);
     return false;
   }
 

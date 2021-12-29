@@ -29,7 +29,7 @@
 #include "task_networking.h"
 #include "task_hmi.h"
 
-extern USBCDC USBSerial;
+extern USBCDC Serial;
 
 static const twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_43, GPIO_NUM_44, TWAI_MODE_NORMAL);
 static const twai_timing_config_t t_config = TWAI_TIMING_CONFIG_250KBITS();
@@ -44,17 +44,17 @@ void print_fms_frame(Fms &frame);
 void task_can(void *pvParameter) {
   if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
     hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK, .color = RED});
-    USBSerial.println("Installing CAN Driver failed!");
+    Serial.println("Installing CAN Driver failed!");
     while (1)
       ;
   }
   if (twai_start() != ESP_OK) {
     hmi_setLed(led_t{.type = LED_CAN, .mode = LED_BLINK, .color = RED});
-    USBSerial.println("Starting CAN failed!");
+    Serial.println("Starting CAN failed!");
     while (1)
       ;
   }
-  USBSerial.println("CAN Initialization Done");
+  Serial.println("CAN Initialization Done");
 
   hmi_setLed(led_t{.type = LED_CAN, .mode = LED_OFF, .color = RED});
 
@@ -137,5 +137,5 @@ void print_fms_frame(Fms &frame) {
     sprintf(dataBuffer + (2 * i), "%02X", frame.getData()[i]);
   }
   dataBuffer[16] = 0;
-  USBSerial.printf("%d: %04X: %s\n", xTaskGetTickCount(), frame.getPgn(), dataBuffer);
+  Serial.printf("%d: %04X: %s\n", xTaskGetTickCount(), frame.getPgn(), dataBuffer);
 }

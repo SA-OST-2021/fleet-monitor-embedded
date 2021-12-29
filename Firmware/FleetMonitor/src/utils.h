@@ -25,7 +25,7 @@
 
 #define CLEAR_TERMINAL "\033[2J\033[1;1H"
 
-extern USBCDC USBSerial;
+extern USBCDC Serial;
 extern FatFileSystem fatfs;
 extern SystemParser systemParser;
 

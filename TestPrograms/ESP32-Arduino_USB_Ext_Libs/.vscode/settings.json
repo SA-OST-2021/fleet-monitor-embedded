@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "array": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "*.tcc": "cpp",
+        "sdkconfig.h": "c",
+        "tusb_config.h": "c",
+        "tusb_config_nrf.h": "c",
+        "tusb_option.h": "c",
+        "tusb_compiler.h": "c",
+        "tusb_config_samd.h": "c",
+        "tusb_config_rp2040.h": "c"
+    }
+}

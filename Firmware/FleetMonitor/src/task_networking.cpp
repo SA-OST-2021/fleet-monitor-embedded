@@ -37,7 +37,7 @@
 EthernetClient ethclient;
 WiFiClient wificlient;
 
-extern USBCDC USBSerial;
+extern USBCDC Serial;
 
 #define TASK_NETWORKING_FREQ 500
 #define CONFIG_LOAD_TIMEOUT  5000
@@ -79,22 +79,22 @@ void task_networking(void *pvParameter) {
       hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_BREATH, .color = BLUE});
     } else if (utils_getSettings().configMode == LOCAL && !config_loaded) {
       if (config.loadFile("config.json")) {
-        USBSerial.println("Config loading was successful.");
+        Serial.println("Config loading was successful.");
         config_loaded = true;
         hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = ethernet_connected ? GREEN : YELLOW});
       } else {
-        USBSerial.println("Local config loading failed.");
+        Serial.println("Local config loading failed.");
         hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = RED});
       }
     } else if (!config_loaded) {
       if (config_load_timeout + CONFIG_LOAD_TIMEOUT < xTaskGetTickCount()) {
-        USBSerial.println("Loading config from server");
+        Serial.println("Loading config from server");
         if (get_config_from_server()) {
-          USBSerial.println("Config loading successful!");
+          Serial.println("Config loading successful!");
           config_loaded = true;
           hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = ethernet_connected ? GREEN : YELLOW});
         } else {
-          USBSerial.println("Config loading failed, trying again..");
+          Serial.println("Config loading failed, trying again..");
           hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_ON, .color = RED});
           config_load_timeout = xTaskGetTickCount();
         }
@@ -148,19 +148,19 @@ void check_connection_status() {
     eth_harware_status = Ethernet.hardwareStatus();
     eth_link_status = Ethernet.linkStatus();
     eth_ip = Ethernet.localIP();
-    USBSerial.print("[ETH] Hardware Status: ");
-    USBSerial.println(eth_harware_status == EthernetW5500 ? "UP" : "DOWN");
-    USBSerial.print("[ETH] Link Status: ");
-    USBSerial.println(eth_link_status == LinkON ? "UP" : "DOWN");
-    USBSerial.print("[ETH] IP Adress: ");
-    USBSerial.println(eth_ip);
+    Serial.print("[ETH] Hardware Status: ");
+    Serial.println(eth_harware_status == EthernetW5500 ? "UP" : "DOWN");
+    Serial.print("[ETH] Link Status: ");
+    Serial.println(eth_link_status == LinkON ? "UP" : "DOWN");
+    Serial.print("[ETH] IP Adress: ");
+    Serial.println(eth_ip);
 
     if (Ethernet.hardwareStatus() != EthernetW5500) {
-      USBSerial.println("[ETH] No Hardware Found!");
+      Serial.println("[ETH] No Hardware Found!");
     }
 
     if (Ethernet.localIP() == no_ip && Ethernet.linkStatus() == LinkON) {
-      USBSerial.println("[ETH] Waiting for IP..");
+      Serial.println("[ETH] Waiting for IP..");
     }
   }*/
 
@@ -186,17 +186,17 @@ void check_connection_status() {
   /*if (wifi_status != WiFi.status() || wifi_ip != WiFi.localIP()) {
     wifi_status = WiFi.status();
     wifi_ip = WiFi.localIP();
-    USBSerial.print("[WiFi] Status: ");
-    USBSerial.println(wifi_status);
-    USBSerial.print("[WiFi] IP Adress: ");
-    USBSerial.println(wifi_ip);
+    Serial.print("[WiFi] Status: ");
+    Serial.println(wifi_status);
+    Serial.print("[WiFi] IP Adress: ");
+    Serial.println(wifi_ip);
 
     if (WiFi.status() == WL_NO_SHIELD) {
-      USBSerial.println("[WiFi] Init failed, trying again..");
+      Serial.println("[WiFi] Init failed, trying again..");
     } else if (WiFi.status() == WL_DISCONNECTED) {
-      USBSerial.println("[WiFi] No connection");
+      Serial.println("[WiFi] No connection");
     } else if (WiFi.status() != WL_CONNECTED) {
-      USBSerial.println("[WiFi] Waiting for Connection..");
+      Serial.println("[WiFi] Waiting for Connection..");
     }
   }*/
 
@@ -221,11 +221,11 @@ void check_connection_status() {
     ethernet_already_connected = true;
     wifi_already_connected = false;
     client.begin(ethclient, "http://");
-    USBSerial.println("Connected over Ethernet");
+    Serial.println("Connected over Ethernet");
   } else if (wifi_connected && !ethernet_connected && !wifi_already_connected) {
     wifi_already_connected = true;
     client.begin(wificlient, "http://");
-    USBSerial.println("Connected over WiFi");
+    Serial.println("Connected over WiFi");
   }
 
   network_connected = wifi_connected | ethernet_connected;
@@ -242,8 +242,8 @@ bool get_config_from_server() {
 
   int statusCode = client.GET();
   if (statusCode != 200) return false;
-  USBSerial.print("Status code: ");
-  USBSerial.println(statusCode);
+  Serial.print("Status code: ");
+  Serial.println(statusCode);
 
   // TODO: investigate system lockup when saving file locally
   return config.loadString(client.getStream(), utils_getSettings().overwriteFile);

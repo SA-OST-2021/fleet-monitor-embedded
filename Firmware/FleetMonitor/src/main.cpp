@@ -53,8 +53,20 @@ void setup() {
 }
 
 void loop() {
+  static bool serialState = false;
+  if(Serial != serialState) {
+    serialState = Serial;
+    vTaskDelay(500);  // Give terminal some time to accept incoming data
+    Serial.printf(CLEAR_TERMINAL);
+    Serial.println("****************************************************");
+    Serial.println("*               onway AG FleetMonitor              *");
+    Serial.println("*     2021 Institute of Networked Solutions OST    *");
+    Serial.println("****************************************************");
+    Serial.println();
+  }
+
   if (xTaskGetTickCount() / 1000 > SYSTEM_MAX_RUNTIME) {
     esp_restart();
   }
-  vTaskDelay(1000);
+  vTaskDelay(100);
 }

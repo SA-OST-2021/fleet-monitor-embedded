@@ -48,7 +48,6 @@ static void msc_flush_cb(void);
 static volatile bool updated = false;
 static Settings settings;
 
-USBCDC USBSerial;
 Adafruit_USBD_MSC usb_msc;
 Adafruit_FlashTransport_ESP32 flashTransport;
 Adafruit_SPIFlash flash(&flashTransport);
@@ -64,31 +63,26 @@ SystemParser systemParser;
  * @return false on error
  */
 bool utils_init(const char* labelName, bool forceFormat) {
-  USB.begin();
   USB.productName("Fleet-Monitor");
-  USBSerial.begin(0);
-
-  USBSerial.printf(CLEAR_TERMINAL);
-  USBSerial.println("FleetMonitor_V0.1");
 
   if (!EEPROM.begin(EEPROM_SIZE)) {
-    USBSerial.println("[UTILS] Failed to initialise EEPROM");
+    Serial.println("[UTILS] Failed to initialise EEPROM");
     return 0;
   }
 
   if (!flash.begin()) {
-    USBSerial.println("[UTILS] Error, failed to initialize flash chip!");
+    Serial.println("[UTILS] Error, failed to initialize flash chip!");
     return 0;
   }
 
   if (!fatfs.begin(&flash) || forceFormat)  // Check if disk must be formated
   {
-    USBSerial.println("[UTILS] No FAT File system found, try to format disk...");
+    Serial.println("[UTILS] No FAT File system found, try to format disk...");
     utils_format(labelName);
   }
 
   if (!utils_updateEfuse()) {
-    USBSerial.println("[UTILS] Could not update Efuses");
+    Serial.println("[UTILS] Could not update Efuses");
     return false;
   }
 
@@ -106,10 +100,10 @@ bool utils_init(const char* labelName, bool forceFormat) {
  */
 bool utils_systemConfig(const char* fileName) {
   if (!systemParser.loadFile(fileName)) {
-    USBSerial.println("[UTILS] System config loading failed.");
+    Serial.println("[UTILS] System config loading failed.");
     return false;
   }
-  USBSerial.println("[UTILS] System config loading was successful.");
+  Serial.println("[UTILS] System config loading was successful.");
 
   settings.ssid = systemParser.getSsid();
   settings.hostIp = systemParser.getHostIp();
@@ -126,7 +120,7 @@ bool utils_systemConfig(const char* fileName) {
   }
   if (valid) {
     settings.password = password;
-    USBSerial.printf("[UTILS] New Password has been set, now store in EEPROM: %s\n", settings.password);
+    Serial.printf("[UTILS] New Password has been set, now store in EEPROM: %s\n", settings.password);
     for (int i = 0; i < EEPROM_SIZE - EEPROM_ADDR_PASSWORD; i++) {
       EEPROM.write(EEPROM_ADDR_PASSWORD + i, settings.password[i]);
       if (i >= strlen(settings.password)) break;  // Copy Null-Terminator aswell
@@ -135,34 +129,26 @@ bool utils_systemConfig(const char* fileName) {
     EEPROM.commit();
   } else {
     if (EEPROM.read(EEPROM_ADDR_STATUS) == EEPROM_STATUS_MAGIC) {
-      USBSerial.println("[UTILS] EEPROM is valid");
+      Serial.println("[UTILS] EEPROM is valid");
       static char localPassword[EEPROM_SIZE - EEPROM_ADDR_PASSWORD];
       for (int i = 0; i < EEPROM_SIZE - EEPROM_ADDR_PASSWORD; i++) {
         localPassword[i] = EEPROM.read(EEPROM_ADDR_PASSWORD + i);
         if (localPassword[i] == '\0') break;
       }
       settings.password = (const char*)localPassword;
-      USBSerial.printf("[UTILS] Password has been loaded from EEPROM: %s\n", settings.password);
+      Serial.printf("[UTILS] Password has been loaded from EEPROM: %s\n", settings.password);
     } else {
-      USBSerial.println("[UTILS] EEPROM is invalid");
+      Serial.println("[UTILS] EEPROM is invalid");
       settings.password = "";
     }
   }
 
   if (systemParser.getBootloaderMode()) {
-    USBSerial.println("[UTILS] Going to reset ESP32...");
+    Serial.println("[UTILS] Going to reset ESP32...");
     hmi_setLed(led_t{.type = LED_STATUS, .mode = LED_OFF, .color = NONE});
     hmi_setLed(led_t{.type = LED_CAN, .mode = LED_OFF, .color = NONE});
-    TinyUSBDevice.detach();
-    USB0.grstctl |= USB_CSFTRST;
-    while ((USB0.grstctl & USB_CSFTRST) == USB_CSFTRST)
-      ;
     vTaskDelay(3000);  // Give some time to save file on flash
-
-    taskENTER_CRITICAL(0);
-    REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
-    vTaskDelay(1000);
-    esp_restart();
+    usb_persist_restart(RESTART_BOOTLOADER);
   }
 
   return true;
@@ -194,47 +180,47 @@ bool utils_format(const char* labelName) {
   static FATFS elmchamFatfs;
   static uint8_t workbuf[4096];  // Working buffer for f_fdisk function.
 
-  USBSerial.println("[UTILS] Partitioning flash with 1 primary partition...");
+  Serial.println("[UTILS] Partitioning flash with 1 primary partition...");
   static DWORD plist[] = {100, 0, 0, 0};      // 1 primary partition with 100% of space.
   static uint8_t buf[512] = {0};              // Working buffer for f_fdisk function.
   static FRESULT r = f_fdisk(0, plist, buf);  // Partition the flash with 1 partition that takes the entire space.
   if (r != FR_OK) {
-    USBSerial.print("[UTILS] Error, f_fdisk failed with error code: ");
-    USBSerial.println(r, DEC);
+    Serial.print("[UTILS] Error, f_fdisk failed with error code: ");
+    Serial.println(r, DEC);
     return 0;
   }
-  USBSerial.println("[UTILS] Partitioned flash!");
-  USBSerial.println("[UTILS] Creating and formatting FAT filesystem (this takes ~60 seconds)...");
+  Serial.println("[UTILS] Partitioned flash!");
+  Serial.println("[UTILS] Creating and formatting FAT filesystem (this takes ~60 seconds)...");
   r = f_mkfs("", FM_FAT | FM_SFD, 0, workbuf, sizeof(workbuf));  // Make filesystem.
   if (r != FR_OK) {
-    USBSerial.print("[UTILS] Error, f_mkfs failed with error code: ");
-    USBSerial.println(r, DEC);
+    Serial.print("[UTILS] Error, f_mkfs failed with error code: ");
+    Serial.println(r, DEC);
     return 0;
   }
 
   r = f_mount(&elmchamFatfs, "0:", 1);  // mount to set disk label
   if (r != FR_OK) {
-    USBSerial.print("[UTILS] Error, f_mount failed with error code: ");
-    USBSerial.println(r, DEC);
+    Serial.print("[UTILS] Error, f_mount failed with error code: ");
+    Serial.println(r, DEC);
     return 0;
   }
-  USBSerial.print("[UTILS] Setting disk label to: ");
-  USBSerial.println(labelName);
+  Serial.print("[UTILS] Setting disk label to: ");
+  Serial.println(labelName);
   r = f_setlabel(labelName);  // Setting label
   if (r != FR_OK) {
-    USBSerial.print("[UTILS] Error, f_setlabel failed with error code: ");
-    USBSerial.println(r, DEC);
+    Serial.print("[UTILS] Error, f_setlabel failed with error code: ");
+    Serial.println(r, DEC);
     return 0;
   }
   f_unmount("0:");     // unmount
   flash.syncBlocks();  // sync to make sure all data is written to flash
-  USBSerial.println("[UTILS] Formatted flash!");
+  Serial.println("[UTILS] Formatted flash!");
   if (!fatfs.begin(&flash))  // Check new filesystem
   {
-    USBSerial.println("[UTILS] Error, failed to mount newly formatted filesystem!");
+    Serial.println("[UTILS] Error, failed to mount newly formatted filesystem!");
     return 0;
   }
-  USBSerial.println("[UTILS] Flash chip successfully formatted with new empty filesystem!");
+  Serial.println("[UTILS] Flash chip successfully formatted with new empty filesystem!");
   yield();
   return 1;
 }
@@ -265,13 +251,13 @@ bool utils_updateEfuse(void) {
   err |= esp_efuse_read_field_blob(ESP_EFUSE_UART_PRINT_CHANNEL, &efuseUartPrintChannel, 1);
 
   if (efuseUartPrintControl == 3 && efuseUartPrintChannel == 1) {
-    USBSerial.println("[UTILS] EFuse have been set correctly!");
+    Serial.println("[UTILS] EFuse have been set correctly!");
   } else {
     efuseUartPrintControl = 0x03;
     efuseUartPrintChannel = 0x01;
     err |= esp_efuse_write_field_blob(ESP_EFUSE_UART_PRINT_CONTROL, &efuseUartPrintControl, 2);
     err |= esp_efuse_write_field_blob(ESP_EFUSE_UART_PRINT_CHANNEL, &efuseUartPrintChannel, 1);
-    USBSerial.println("[UTILS] EFuse have been burned!");
+    Serial.println("[UTILS] EFuse have been burned!");
   }
   return (err == ESP_OK);
 }

@@ -16,14 +16,16 @@ int32_t msc_read_cb(uint32_t lba, void* buffer, uint32_t bufsize);
 int32_t msc_write_cb(uint32_t lba, uint8_t* buffer, uint32_t bufsize);
 void msc_flush_cb(void);
 
-USBCDC USBSerial;
-Adafruit_USBD_MSC usb_msc;
+
 Adafruit_FlashTransport_ESP32 flashTransport;
 Adafruit_SPIFlash flash(&flashTransport);
+
 FatFileSystem fatfs;
 
 FatFile root;
 FatFile file;
+
+Adafruit_USBD_MSC usb_msc;
 
 bool forceFormatDisk = false;
 bool fs_changed;
@@ -31,72 +33,24 @@ bool fs_changed;
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
-  USB.begin();
-  USB.productName("Fleet-Monitor");
-  USBSerial.begin(0);
-  USBSerial.println("ESP32-Arduino_USB_MSC_Flash");
+  //USB.begin();
+  //USB.productName("Fleet-Monitor");
+  //Serial.begin(0);
+  //Serial.println("ESP32-Arduino_USB_MSC_Flash");
+
+  while(!Serial) delay(10);
 
   if (!flash.begin()) {
-    USBSerial.println("Error, failed to initialize flash chip!");
+    Serial.println("Error, failed to initialize flash chip!");
     while (1) yield();
   }
 
-  if (!fatfs.begin(&flash) || forceFormatDisk)  // Check if disk must be formated
-  {
-    USBSerial.println("No FAT File system found, try to format disk...");
-
-    FATFS elmchamFatfs;
-    uint8_t workbuf[4096];  // Working buffer for f_fdisk function.
-
-    USBSerial.println("Partitioning flash with 1 primary partition...");
-    DWORD plist[] = {100, 0, 0, 0};      // 1 primary partition with 100% of space.
-    uint8_t buf[512] = {0};              // Working buffer for f_fdisk function.
-    FRESULT r = f_fdisk(0, plist, buf);  // Partition the flash with 1 partition that takes the entire space.
-    if (r != FR_OK) {
-      USBSerial.print("Error, f_fdisk failed with error code: ");
-      USBSerial.println(r, DEC);
-      while (1)
-        ;
-    }
-    USBSerial.println("Partitioned flash!");
-    USBSerial.println("Creating and formatting FAT filesystem (this takes ~60 seconds)...");
-    r = f_mkfs("", FM_FAT | FM_SFD, 0, workbuf, sizeof(workbuf));  // Make filesystem.
-    if (r != FR_OK) {
-      USBSerial.print("Error, f_mkfs failed with error code: ");
-      USBSerial.println(r, DEC);
-      while (1) yield();
-    }
-
-    r = f_mount(&elmchamFatfs, "0:", 1);  // mount to set disk label
-    if (r != FR_OK) {
-      USBSerial.print("Error, f_mount failed with error code: ");
-      USBSerial.println(r, DEC);
-      while (1) yield();
-    }
-    USBSerial.println("Setting disk label to: " DISK_LABEL);
-    r = f_setlabel(DISK_LABEL);  // Setting label
-    if (r != FR_OK) {
-      USBSerial.print("Error, f_setlabel failed with error code: ");
-      USBSerial.println(r, DEC);
-      while (1) yield();
-    }
-    f_unmount("0:");     // unmount
-    flash.syncBlocks();  // sync to make sure all data is written to flash
-    USBSerial.println("Formatted flash!");
-    if (!fatfs.begin(&flash))  // Check new filesystem
-    {
-      USBSerial.println("Error, failed to mount newly formatted filesystem!");
-      while (1) delay(1);
-    }
-    USBSerial.println("Flash chip successfully formatted with new empty filesystem!");
-  }
-
-  USBSerial.println("Adafruit TinyUSB Mass Storage External Flash example");
-  USBSerial.print("JEDEC ID: 0x");
-  USBSerial.println(flash.getJEDECID(), HEX);
-  USBSerial.print("Flash size: ");
-  USBSerial.print(flash.size() / 1024);
-  USBSerial.println(" KB");
+  Serial.println("Adafruit TinyUSB Mass Storage External Flash example");
+  Serial.print("JEDEC ID: 0x");
+  Serial.println(flash.getJEDECID(), HEX);
+  Serial.print("Flash size: ");
+  Serial.print(flash.size() / 1024);
+  Serial.println(" KB");
 
   usb_msc.setID("Onway AG", "Fleet-Monitor", "1.0");
   usb_msc.setReadWriteCallback(msc_read_cb, msc_write_cb, msc_flush_cb);  // Set callback
@@ -105,52 +59,104 @@ void setup() {
   usb_msc.setUnitReady(true);  // MSC is ready for read/write
   usb_msc.begin();
 
+  if (!fatfs.begin(&flash) || forceFormatDisk)  // Check if disk must be formated
+  {
+    Serial.println("No FAT File system found, try to format disk...");
+
+    FATFS elmchamFatfs;
+    uint8_t workbuf[4096];  // Working buffer for f_fdisk function.
+
+    Serial.println("Partitioning flash with 1 primary partition...");
+    DWORD plist[] = {100, 0, 0, 0};      // 1 primary partition with 100% of space.
+    uint8_t buf[512] = {0};              // Working buffer for f_fdisk function.
+    FRESULT r = f_fdisk(0, plist, buf);  // Partition the flash with 1 partition that takes the entire space.
+    if (r != FR_OK) {
+      Serial.print("Error, f_fdisk failed with error code: ");
+      Serial.println(r, DEC);
+      while (1)
+        ;
+    }
+    Serial.println("Partitioned flash!");
+    Serial.println("Creating and formatting FAT filesystem (this takes ~60 seconds)...");
+    r = f_mkfs("", FM_FAT | FM_SFD, 0, workbuf, sizeof(workbuf));  // Make filesystem.
+    if (r != FR_OK) {
+      Serial.print("Error, f_mkfs failed with error code: ");
+      Serial.println(r, DEC);
+      while (1) yield();
+    }
+
+    r = f_mount(&elmchamFatfs, "0:", 1);  // mount to set disk label
+    if (r != FR_OK) {
+      Serial.print("Error, f_mount failed with error code: ");
+      Serial.println(r, DEC);
+      while (1) yield();
+    }
+    Serial.println("Setting disk label to: " DISK_LABEL);
+    r = f_setlabel(DISK_LABEL);  // Setting label
+    if (r != FR_OK) {
+      Serial.print("Error, f_setlabel failed with error code: ");
+      Serial.println(r, DEC);
+      while (1) yield();
+    }
+    f_unmount("0:");     // unmount
+    flash.syncBlocks();  // sync to make sure all data is written to flash
+    Serial.println("Formatted flash!");
+    if (!fatfs.begin(&flash))  // Check new filesystem
+    {
+      Serial.println("Error, failed to mount newly formatted filesystem!");
+      while (1) delay(1);
+    }
+    Serial.println("Flash chip successfully formatted with new empty filesystem!");
+  }
+
+  
+
   fs_changed = true;
 
-  while (!USBSerial) yield();
+  while (!Serial) yield();
 
   // Check if a directory called 'test' exists and create it if not there.
   // Note you should _not_ add a trailing slash (like '/test/') to directory names!
   // You can use the same exists function to check for the existance of a file too.
   if (!fatfs.exists("/test")) {
-    USBSerial.println("Test directory not found, creating...");
+    Serial.println("Test directory not found, creating...");
 
     // Use mkdir to create directory (note you should _not_ have a trailing slash).
     fatfs.mkdir("/test");
 
     if (!fatfs.exists("/test")) {
-      USBSerial.println("Error, failed to create directory!");
+      Serial.println("Error, failed to create directory!");
       while (1) yield();
     } else {
-      USBSerial.println("Created directory!");
+      Serial.println("Created directory!");
     }
   }
 
   // You can also create all the parent subdirectories automatically with mkdir.
   // For example to create the hierarchy /test/foo/bar:
-  USBSerial.println("Creating deep folder structure...");
+  Serial.println("Creating deep folder structure...");
   if (!fatfs.exists("/test/foo/bar")) {
-    USBSerial.println("Creating /test/foo/bar");
+    Serial.println("Creating /test/foo/bar");
     fatfs.mkdir("/test/foo/bar");
 
     if (!fatfs.exists("/test/foo/bar")) {
-      USBSerial.println("Error, failed to create directory!");
+      Serial.println("Error, failed to create directory!");
       while (1) yield();
     } else {
-      USBSerial.println("Created directory!");
+      Serial.println("Created directory!");
     }
   }
 
   // This will create the hierarchy /test/foo/baz, even when /test/foo already exists:
   if (!fatfs.exists("/test/foo/baz")) {
-    USBSerial.println("Creating /test/foo/baz");
+    Serial.println("Creating /test/foo/baz");
     fatfs.mkdir("/test/foo/baz");
 
     if (!fatfs.exists("/test/foo/baz")) {
-      USBSerial.println("Error, failed to create directory!");
+      Serial.println("Error, failed to create directory!");
       while (1) yield();
     } else {
-      USBSerial.println("Created directory!");
+      Serial.println("Created directory!");
     }
   }
 
@@ -161,10 +167,10 @@ void setup() {
   // end of it.
   File writeFile = fatfs.open("/test/test.txt", FILE_WRITE);
   if (!writeFile) {
-    USBSerial.println("Error, failed to open test.txt for writing!");
+    Serial.println("Error, failed to open test.txt for writing!");
     while (1) yield();
   }
-  USBSerial.println("Opened file /test/test.txt for writing/appending...");
+  Serial.println("Opened file /test/test.txt for writing/appending...");
 
   // Once open for writing you can print to the file as if you're printing
   // to the serial terminal, the same functions are available.
@@ -176,12 +182,12 @@ void setup() {
 
   // Close the file when finished writing.
   writeFile.close();
-  USBSerial.println("Wrote to file /test/test.txt!");
+  Serial.println("Wrote to file /test/test.txt!");
 
   // Now open the same file but for reading.
   File readFile = fatfs.open("/test/test.txt", FILE_READ);
   if (!readFile) {
-    USBSerial.println("Error, failed to open test.txt for reading!");
+    Serial.println("Error, failed to open test.txt for reading!");
     while (1) yield();
   }
 
@@ -190,36 +196,36 @@ void setup() {
   //   https://www.arduino.cc/en/reference/SD
   // Read a line of data:
   String line = readFile.readStringUntil('\n');
-  USBSerial.print("First line of test.txt: ");
-  USBSerial.println(line);
+  Serial.print("First line of test.txt: ");
+  Serial.println(line);
 
   // You can get the current position, remaining data, and total size of the file:
-  USBSerial.print("Total size of test.txt (bytes): ");
-  USBSerial.println(readFile.size(), DEC);
-  USBSerial.print("Current position in test.txt: ");
-  USBSerial.println(readFile.position(), DEC);
-  USBSerial.print("Available data to read in test.txt: ");
-  USBSerial.println(readFile.available(), DEC);
+  Serial.print("Total size of test.txt (bytes): ");
+  Serial.println(readFile.size(), DEC);
+  Serial.print("Current position in test.txt: ");
+  Serial.println(readFile.position(), DEC);
+  Serial.print("Available data to read in test.txt: ");
+  Serial.println(readFile.available(), DEC);
 
   // And a few other interesting attributes of a file:
-  USBSerial.print("File name: ");
-  USBSerial.println(readFile.name());
-  USBSerial.print("Is file a directory? ");
-  USBSerial.println(readFile.isDirectory() ? "Yes" : "No");
+  Serial.print("File name: ");
+  Serial.println(readFile.name());
+  Serial.print("Is file a directory? ");
+  Serial.println(readFile.isDirectory() ? "Yes" : "No");
 
   // You can seek around inside the file relative to the start of the file.
   // For example to skip back to the start (position 0):
   if (!readFile.seek(0)) {
-    USBSerial.println("Error, failed to seek back to start of file!");
+    Serial.println("Error, failed to seek back to start of file!");
     while (1) yield();
   }
 
   // And finally to read all the data and print it out a character at a time
   // (stopping when end of file is reached):
-  USBSerial.println("Entire contents of test.txt:");
+  Serial.println("Entire contents of test.txt:");
   while (readFile.available()) {
     char c = readFile.read();
-    USBSerial.print(c);
+    Serial.print(c);
   }
 
   // Close the file when finished reading.
@@ -229,26 +235,26 @@ void setup() {
   // Just like the SD library the File type represents either a file or directory.
   File testDir = fatfs.open("/test");
   if (!testDir) {
-    USBSerial.println("Error, failed to open test directory!");
+    Serial.println("Error, failed to open test directory!");
     while (1) yield();
   }
   if (!testDir.isDirectory()) {
-    USBSerial.println("Error, expected test to be a directory!");
+    Serial.println("Error, expected test to be a directory!");
     while (1) yield();
   }
-  USBSerial.println("Listing children of directory /test:");
+  Serial.println("Listing children of directory /test:");
   File child = testDir.openNextFile();
   while (child) {
     char filename[64];
     child.getName(filename, sizeof(filename));
 
     // Print the file name and mention if it's a directory.
-    USBSerial.print("- ");
-    USBSerial.print(filename);
+    Serial.print("- ");
+    Serial.print(filename);
     if (child.isDirectory()) {
-      USBSerial.print(" (directory)");
+      Serial.print(" (directory)");
     }
-    USBSerial.println();
+    Serial.println();
     // Keep calling openNextFile to get a new file.
     // When you're done enumerating files an unopened one will
     // be returned (i.e. testing it for true/false like at the
@@ -265,52 +271,52 @@ void setup() {
   // inside /test/foo and then delete it.
   File test2File = fatfs.open("/test/foo/test2.txt", FILE_WRITE);
   test2File.close();
-  USBSerial.println("Deleting /test/foo/test2.txt...");
+  Serial.println("Deleting /test/foo/test2.txt...");
   if (!fatfs.remove("/test/foo/test2.txt")) {
-    USBSerial.println("Error, couldn't delete test.txt file!");
+    Serial.println("Error, couldn't delete test.txt file!");
     while (1) yield();
   }
-  USBSerial.println("Deleted file!");
+  Serial.println("Deleted file!");
 
   // Delete a directory with the rmdir command.  Be careful as
   // this will delete EVERYTHING in the directory at all levels!
   // I.e. this is like running a recursive delete, rm -rf *, in
   // unix filesystems!
-  USBSerial.println("Deleting /test directory and everything inside it...");
+  Serial.println("Deleting /test directory and everything inside it...");
   if (!testDir.rmRfStar()) {
-    USBSerial.println("Error, couldn't delete test directory!");
+    Serial.println("Error, couldn't delete test directory!");
     while (1) yield();
   }
   // Check that test is really deleted.
   if (fatfs.exists("/test")) {
-    USBSerial.println("Error, test directory was not deleted!");
+    Serial.println("Error, test directory was not deleted!");
     while (1) yield();
   }
-  USBSerial.println("Test directory was deleted!");
+  Serial.println("Test directory was deleted!");
 
-  USBSerial.println("Finished!");
+  Serial.println("Finished!");
 }
 
 void loop() {
   if (fs_changed) {
     fs_changed = false;
     if (!root.open("/")) {
-      USBSerial.println("open root failed");
+      Serial.println("open root failed");
       return;
     }
-    USBSerial.println("Flash contents:");
+    Serial.println("Flash contents:");
     while (file.openNext(&root, O_RDONLY)) {
-      file.printFileSize(&USBSerial);
-      USBSerial.write(' ');
-      file.printName(&USBSerial);
+      file.printFileSize(&Serial);
+      Serial.write(' ');
+      file.printName(&Serial);
       if (file.isDir()) {
-        USBSerial.write('/');
+        Serial.write('/');
       }
-      USBSerial.println();
+      Serial.println();
       file.close();
     }
     root.close();
-    USBSerial.println();
+    Serial.println();
     delay(1000);
   }
 
@@ -318,7 +324,7 @@ void loop() {
   static int t = 0;
   if (millis() - t > 1000) {
     t = millis();
-    USBSerial.println(millis());
+    Serial.println(millis());
   }
 }
 

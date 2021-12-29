@@ -30,7 +30,7 @@
 #define ACC_MOSI 13
 #define ACC_CLK  14
 
-extern USBCDC USBSerial;
+extern USBCDC Serial;
 
 typedef struct {
   TickType_t ts;
@@ -57,7 +57,7 @@ void task_accel(void* pvParameter) {
       accel_data.acc_y = accel.getY() - calibration.acc_y;
       accel_data.acc_z = accel.getZ() - calibration.acc_z;
 
-      // USBSerial.println((String)accel_data.acc_x + (String) " " + (String)accel_data.acc_y + (String) " " +
+      // Serial.println((String)accel_data.acc_x + (String) " " + (String)accel_data.acc_y + (String) " " +
       //                   accel_data.acc_z);
     }
     vTaskDelayUntil(&task_last_tick, task_freq);

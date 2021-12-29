@@ -34,14 +34,14 @@ bool SystemParser::loadFile(const char* path) {
   File file = fatfs.open(filePath);
 
   if (!file) {
-    USBSerial.println("open file failed");
+    Serial.println("open file failed");
     return false;
   }
 
   DeserializationError error = deserializeJson(doc, file);
   if (error) {
     file.close();
-    USBSerial.printf("Failed to read file, using default configuration: %d\n", error);
+    Serial.printf("Failed to read file, using default configuration: %d\n", error);
     return false;
   }
 
@@ -175,18 +175,18 @@ bool SystemParser::saveFile(const char* path) {
   }
   if (fatfs.exists(filePath)) {
     if (!fatfs.remove(filePath)) {
-      USBSerial.println("Could not remove file");
+      Serial.println("Could not remove file");
       return false;
     }
   }
   File file = fatfs.open(filePath, FILE_WRITE);
   if (!file) {
-    USBSerial.println("open file failed");
+    Serial.println("open file failed");
     return false;
   }
   if (serializeJson(doc, file) == 0) {
     file.close();
-    USBSerial.println("Failed to write to file");
+    Serial.println("Failed to write to file");
     return false;
   }
   file.close();

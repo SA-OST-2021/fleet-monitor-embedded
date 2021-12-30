@@ -57,7 +57,7 @@ void task_frame_handler(void *pvParameter) {
     if (xQueueReceive(fmsQueue, &(frame), portMAX_DELAY) == pdPASS) {
       StaticJsonDocument<256> entry;
       String epoch = "";
-	  float t = (float)start_time + (float)frame.getLastUpdate()/1000.0f;
+	  double t = (double)start_time + (double)frame.getLastUpdate()/1000.0;
       epoch += String(t, 3);
       entry["ts"] = epoch;
       char pgn[5];

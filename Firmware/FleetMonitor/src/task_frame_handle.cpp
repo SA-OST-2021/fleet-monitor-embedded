@@ -45,6 +45,7 @@ ESP32Time rtc;
 DynamicJsonDocument doc(DOCUMENT_SIZE);
 
 bool send_data_to_client();
+int start_time = 0;
 
 void task_frame_handler(void *pvParameter) {
   // Wait until we have network, config and can initialized
@@ -56,7 +57,8 @@ void task_frame_handler(void *pvParameter) {
     if (xQueueReceive(fmsQueue, &(frame), portMAX_DELAY) == pdPASS) {
       StaticJsonDocument<256> entry;
       String epoch = "";
-      epoch += String(rtc.getEpoch()) + "." + String(rtc.getMillis());
+	  float t = (float)start_time + (float)(frame.getLastUpdate()/1000.0f); 
+      epoch += String(t, 3);
       entry["ts"] = epoch;
       char pgn[5];
       snprintf(pgn, 5, "%0X", frame.getPgn());
@@ -123,6 +125,7 @@ bool send_data_to_client() {
   if (matches == 6) {
     rtc.setTime(S, M, H, d, m, y);
     time_set = true;
+	start_time = rtc.getEpoch();
   }
 
   return true;

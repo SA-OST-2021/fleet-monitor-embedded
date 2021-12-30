@@ -34,6 +34,10 @@ class Fms{
         TickType_t getTimeSinceLastUpdate(){
             return xTaskGetTickCount() - last_update;
         }
+		
+		TickType_t getLastUpdate(){
+            return last_update;
+        }
 
         bool compareData(const Fms& b);
 
